@@ -3,7 +3,7 @@ const wc = window.console
 const l = console.log.bind(wc)
 const cl = console.clear.bind(wc)
 const wn = console.warn.bind(wc)
-const rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld, type) => {
+const rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld) => {
   // obj - your object (THREE.Object3D or derived)
   // point - the point of rotation (THREE.Vector3)
   // axis - the axis of rotation (normalized THREE.Vector3)
@@ -24,7 +24,7 @@ const rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld, type) => 
   }
 
   obj.rotateOnAxis(axis, theta); // rotate the OBJECT
-  if (type === "camera") obj.lookAt(point)
+  obj.lookAt(point)
 }
 const getDistance = (from, to) => {
   let x0 = from.x, y0 = from.y, z0 = from.z  
@@ -70,7 +70,21 @@ let ctn = document.getElementById("three-ctn")
 , origin = new THREE.Vector3(0, 0, 0)
 , startPos = new THREE.Vector3(0, 0, 500)
 , cameraStartPos = new THREE.Vector3(0, 1300, 0)
+, plane = new THREE.Mesh(
+  new THREE.PlaneGeometry(1000, 1000, 32, 32),
+  new THREE.MeshBasicMaterial({
+    color: new THREE.Color('pink'), side: THREE.DoubleSide,
+    transparent: true, opacity: .1, wireframe: true
+  })
+)
 , parent = new THREE.Object3D()
+, parentWireMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(15, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2),
+  new THREE.MeshBasicMaterial({
+    color: new THREE.Color('blue'), side: THREE.DoubleSide,
+    transparent: true, opacity: .1, wireframe: true
+  })
+)
 , ship
 , planetArr = [
   {
@@ -264,8 +278,6 @@ let ctn = document.getElementById("three-ctn")
     },
   }
 ]
-, plObjArr = []
-, lineArr = []
 , closest = { name: "" }
 , fraction = 0
 , normal = new THREE.Vector3()
@@ -273,21 +285,40 @@ let ctn = document.getElementById("three-ctn")
 , tubeMesh
 // , currCam = splineCamera
 , currCam = camera
+, angle = { 
+  from: Math.PI / 2,
+  current: Math.PI / 2 
+}
 , Params = function () {
-  this.message = 'Customize here'
-  this.shipSpeed = 0.0001
-  this.tubeOpacity = 0.2
-  this.helpers = true
-  this.followCam = false
-  this.getState = function () { l(this) }
-  this.normal = function () { currCam = camera }
-  this.spline = function () { currCam = splineCamera }
-  this.rotateCam = function () {
-    // Keep updating in animate() to continuously look at planet
-    rotateCameraAboutPoint(splineCamera, ship.getWorldPosition(), new THREE.Vector3(0, 1, 0), Math.PI / 2, true, "camera")
-  }
+  return {
+    shipSpeed: 0.0001
+    , tubeOpacity: 0.2
+    , showFog: false
+    , fogDistance: 400
+    , helpers: true
+    , followCam: false  
+    , normal: function () { currCam = camera }
+    , spline: function () { currCam = splineCamera }
+    , rotateCam: function () {
+      // rotateCameraAboutPoint(splineCamera, ship.getWorldPosition(), new THREE.Vector3(0, 1, 0), Math.PI / 2, true)
+      TweenMax.to(angle, 1, {
+        from: "+="+Math.PI / 2,
+        onUpdate: function(){
+          // Keep updating in animate() to continuously look at planet
+          rotateCameraAboutPoint(
+            splineCamera, ship.getWorldPosition(), new THREE.Vector3(0, 1, 0),
+            this.target.from - angle.current, true
+          )
+          angle.current = this.target.from
+        }
+      })
+    }
+    , message: 'Customize here'
+    , getState: function () { l(this) }
+  }  
 }
 , params = new Params()
+, fog = new THREE.Fog(0x000000, 1, params.fogDistance)
 
 function init() {
   initScene()
@@ -311,6 +342,9 @@ function initScene(){
   scene.add(camera)    
   scene.add(new THREE.AmbientLight(0xffffff, .2))
   
+  // Fog
+  if (params.showFog) scene.fog = fog
+
   // Spotlight and representational mesh
   let spotLightMesh = new THREE.Mesh(
     new THREE.SphereGeometry(5, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2),
@@ -336,20 +370,14 @@ function initScene(){
   spotLight2.position.copy(lightPos2)
   scene.add(spotLight2)
 
-  // Plane and axes helper
-  let plane = new THREE.Mesh(
-    new THREE.PlaneGeometry(1000, 1000, 32, 32),
-    new THREE.MeshBasicMaterial({
-      color: new THREE.Color('pink'), side: THREE.DoubleSide,
-      transparent: true, opacity: .1, wireframe: true
-    })
-  )
+  // Plane  
   plane.rotation.x = Math.PI / 2
-  scene.add(plane)
   
   // Helpers
+  scene.add(plane)
   scene.add(splineCameraHelper)
   scene.add(axesHelper)
+  parent.add(parentWireMesh)
 }
 
 function initGUI(){
@@ -359,18 +387,32 @@ function initGUI(){
     tubeMesh.children[0].material.opacity = value
     tubeMesh.children[1].material.opacity = value
   })
-
   gui.add(params, 'shipSpeed', 0, 0.001)
+  
+  let f = gui.addFolder('fog')
+  f.add(params, 'fogDistance', 100, 5000).onChange(value => { 
+    scene.fog.far = value 
+  })  
+  f.add(params, 'showFog').onChange(value => { 
+    if (value) scene.fog = fog
+    else scene.fog = null 
+  })  
+  f.open()
+
   gui.add(params, 'followCam')
   
   let he = gui.add(params, 'helpers')
   he.onChange(value => {
     if(value){
+      scene.add(plane)
       scene.add(splineCameraHelper)
       scene.add(axesHelper)
+      parent.add(parentWireMesh)
     } else{
+      scene.remove(plane)
       scene.remove(splineCameraHelper)
       scene.remove(axesHelper)
+      parent.remove(parentWireMesh)
     }
   })
 
@@ -393,8 +435,8 @@ function addShip() {
       parent.add(ship)
 
       splineCamera.position.x = 15
-      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(0, 1, 0), 3 * Math.PI / 2, false, "camera")
-      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(1, 0, 0), -.2, false, "camera")  
+      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(0, 1, 0), 3 * Math.PI / 2, false)
+      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(1, 0, 0), -.2, false)  
       
       // gltf.animations; // Array<THREE.AnimationClip>
       // gltf.scene; // THREE.Scene
@@ -407,13 +449,7 @@ function addShip() {
   )
 
   // Wireframe sphere to visualize parent
-  parent.add(new THREE.Mesh(
-    new THREE.SphereGeometry(15, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2),
-    new THREE.MeshBasicMaterial({
-      color: new THREE.Color('blue'), side: THREE.DoubleSide,
-      transparent: true, opacity: .1, wireframe: true
-    })
-  ))
+  parent.add(parentWireMesh)
 
   // // Cone for ship (replace by actual model)
   // ship = new THREE.Mesh(
@@ -479,7 +515,7 @@ function addPlanets() {
     planetGroup.add(cloudMesh)
 
     planetGroup.position.copy(object.pos)
-    plObjArr.push(planetGroup)
+    object.planetGroup = planetGroup
     scene.add(planetGroup)
 
     // Moons / Rings
@@ -538,10 +574,11 @@ function addPlanets() {
       new THREE.Vector3(object.pos.x, object.pos.y, object.pos.z),
     )
     let line = new THREE.Line(line_geo, new THREE.LineBasicMaterial({ 
-      color: 0x88fabc, transparent: true, opacity: 0
+      color: 0x88fabc, transparent: true,
+      opacity: 0, depthWrite: false
     }))
     line.lineLength = 0
-    lineArr.push(line)
+    object.line = line
     scene.add(line)
   }) 
 }
@@ -595,11 +632,12 @@ function addPath(){
 }
 
 function animatePlanets(){
-  plObjArr.forEach(planetObject => {
-    let children = planetObject.children
+  planetArr.forEach(obj => {
+    let planetObject = obj.planetGroup
+    , children = planetObject.children
+
     if (children[0]) children[0].rotation.y += .002
     if (children[1]) children[1].rotation.y += .001
-
     if (children[2] && children[2].type === "moon") {
       rotateCameraAboutPoint(children[2], planetObject.position, new THREE.Vector3(0, 1, 0), 0.01, true)
     }
@@ -609,14 +647,15 @@ function animatePlanets(){
 function findNearest() {
   let min = Infinity, oldClosest = closest
 
-  lineArr.forEach((line, i) => {
+  planetArr.forEach(obj => {
+    let line = obj.line
     line.geometry.vertices[0] = parent.position
     line.geometry.verticesNeedUpdate = true    
     line.lineLength = getDistance(parent.position, line.geometry.vertices[1])
     
     if (min >= line.lineLength) {
       min = line.lineLength
-      closest = planetArr[i]
+      closest = obj
     } 
   })
 
@@ -638,12 +677,14 @@ function renderFollowCamera() {
   if (fraction >= 1) fraction = 0
 
   let t = fraction
-  , pos = tube.parameters.path.getPointAt(t)
-  , dir = tube.parameters.path.getTangentAt(t)
-  , lookAt = tube.parameters.path.getPointAt((t + 30 / tube.parameters.path.getLength()) % 1).copy(pos).add(dir)
+  , path = tube.parameters.path
+  , pos = path.getPointAt(t)
+  , dir = path.getTangentAt(t)
+  , lookAt = path.getPointAt((t + 30 / path.getLength()) % 1).copy(pos).add(dir)
 
+  if(closest.name.length) splineCamera.lookAt(closest.planetGroup.position)
+  
   parent.position.copy(pos)
-  splineCamera.lookAt(parent.position)
   parent.matrix.lookAt(parent.position, lookAt, normal)
   parent.rotation.setFromRotationMatrix(parent.matrix, parent.rotation.order)  
 }
@@ -662,4 +703,7 @@ function animate() {
 }
 
 init()
-animate()
+
+// Either of the below must be used. If using GSAP, use 2nd
+// animate()
+TweenLite.ticker.addEventListener("tick", render)
