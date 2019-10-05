@@ -569,7 +569,7 @@ function addPath(){
       new THREE.Vector3(-350, 0, -350),
       new THREE.Vector3(-450, 0, -250),
       new THREE.Vector3(-350, 0, -50),
-    ]), 500, 2, 4, false)
+    ]), 500, 2, 3, false)
   
   tubeMesh = THREE.SceneUtils.createMultiMaterialObject(
     tube,
@@ -578,12 +578,14 @@ function addPath(){
         color: 0xffff00,
         side: THREE.DoubleSide,
         opacity: params.tubeOpacity,
+        depthWrite: false,
         transparent: true
       }),
       new THREE.MeshBasicMaterial({
         color: 0x000000,
         opacity: params.tubeOpacity,
         wireframe: true,
+        depthWrite: false,
         transparent: true
       })
     ]
