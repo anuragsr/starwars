@@ -6,8 +6,3 @@ html, body, #three-ctn{
 	height: 100%;
 	width: 100%;
 }
-#btn-ctn{
-	position: fixed;
-	top: 0;
-	left: 0;
-}

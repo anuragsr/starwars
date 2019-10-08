@@ -9,8 +9,8 @@ window.onload = function(){
   , renderer = new THREE.WebGLRenderer({ antialias: true })
   , controls = new THREE.OrbitControls(camera, renderer.domElement)
   , scene = new THREE.Scene()
-  , mtlLoader = new THREE.MTLLoader()
-  , objLoader = new THREE.OBJLoader()
+  // , mtlLoader = new THREE.MTLLoader()
+  // , objLoader = new THREE.OBJLoader()
   , theta = 0
   , planetArr = [
     {
@@ -18,41 +18,41 @@ window.onload = function(){
       path: 'assets/dagobah/',
       position: new THREE.Vector3(0, 0, -10),
       planet: {        
-        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-        // bump: { v: 'bump.jpg', repeat: new THREE.Vector2(2, 2) },     
-        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(1, 1), opacity: .8 },
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },     
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(1, 1), opacity: .8 },
       }
     }, {
       name: 'endor',
       path: 'assets/endor/',
       position: new THREE.Vector3(-10, 0, -10),
       planet: {        
-        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-        bump: { v: 'bump.jpg', repeat: new THREE.Vector2(2, 2) },     
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },     
         // specular: { v: 'specular.jpg', repeat: new THREE.Vector2(2, 2) },     
-        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(3, 3), opacity: 1 },
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(3, 3), opacity: 1 },
       },
       moon: {
-        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-        bump: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
+        diffuse: { v: 'moon_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moon_new.jpg', repeat: new THREE.Vector2(2, 2) },
       }
     }, {
       name: 'geonosis',
       path: 'assets/geonosis/',
       position: new THREE.Vector3(10, 0, -10),
       planet: {        
-        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-        bump: { v: 'bump.jpg', repeat: new THREE.Vector2(2, 2) },     
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },     
         // specular: { v: 'specular.jpg', repeat: new THREE.Vector2(2, 2) },     
-        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
       },
       rings: {
-        diffuse: { v: 'rings-txt.png', repeat: new THREE.Vector2(2, 2) },
-        bump: { v: 'rings-txt.png', repeat: new THREE.Vector2(2, 2) },
+        diffuse: { v: 'rings-txt_new.png', repeat: new THREE.Vector2(2, 2) },
+        // bump: { v: 'rings-txt.png', repeat: new THREE.Vector2(2, 2) },
         // alpha: { v: 'rings-opi.jpg', repeat: new THREE.Vector2(2, 2) },
         // alpha: { v: 'rings-op.jpg', repeat: new THREE.Vector2(2, 2) },
         // alpha: { v: 'rings-op2.png', repeat: new THREE.Vector2(2, 2) },
-        alpha: { v: 'rings-op3.png', repeat: new THREE.Vector2(2, 2) },
+        alpha: { v: 'rings-op3_new.png', repeat: new THREE.Vector2(2, 2) },
       }
     }, {
       name: 'hoth',
@@ -65,8 +65,8 @@ window.onload = function(){
         clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .8 },
       }
     }, {
-      name: 'corsucant',
-      path: 'assets/corsucant/',
+      name: 'coruscant',
+      path: 'assets/coruscant/',
       position: new THREE.Vector3(0, -10, -10),
       planet: {        
         // diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
@@ -143,14 +143,14 @@ window.onload = function(){
 
   initScene()
   // addObjects(planetArr[0])
-  addObjects(planetArr[1])
+  // addObjects(planetArr[1])
   // addObjects(planetArr[2])
   // addObjects(planetArr[3])
   // addObjects(planetArr[4])
   // addObjects(planetArr[5])
   // addObjects(planetArr[6])
   // addObjects(planetArr[7])
-  // addObjects(planetArr[8])
+  addObjects(planetArr[8])
   // addShip()
   render()
   animate()
@@ -412,7 +412,7 @@ window.onload = function(){
     var gltfLoader = new THREE.GLTFLoader()
     gltfLoader.load(
       // resource URL
-      'assets/start-destroyer/scene.gltf',
+      'assets/star-destroyer/scene.gltf',
       // called when the resource is loaded
       function ( gltf ) {
         // l(gltf)

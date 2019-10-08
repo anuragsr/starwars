@@ -1,9 +1,9 @@
 /* eslint-disable no-undef */
 const wc = window.console
-const l = console.log.bind(wc)
-const cl = console.clear.bind(wc)
-const wn = console.warn.bind(wc)
-const rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld) => {
+, l = console.log.bind(wc)
+, cl = console.clear.bind(wc)
+, wn = console.warn.bind(wc)
+, rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld, lookAt) => {
   // obj - your object (THREE.Object3D or derived)
   // point - the point of rotation (THREE.Vector3)
   // axis - the axis of rotation (normalized THREE.Vector3)
@@ -24,301 +24,347 @@ const rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld) => {
   }
 
   obj.rotateOnAxis(axis, theta); // rotate the OBJECT
-  obj.lookAt(point)
+  if (lookAt) obj.lookAt(point)
 }
-const getDistance = (from, to) => {
+, getDistance = (from, to) => {
   let x0 = from.x, y0 = from.y, z0 = from.z  
   , x1 = to.x, y1 = to.y, z1 = to.z
 
   return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2) + Math.pow(z1 - z0, 2))
 }
-const setTexture = (tex, pl, type) => {
+, createMultiMaterialObject = (geometry, materials) => {
+  let group = new THREE.Group()
+  materials.forEach(material => group.add(new THREE.Mesh(geometry, material)))
+  return group
+}
+, setTexture = (tex, pl, type) => {
   if (tex) {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
     tex.repeat.copy(pl[type].repeat)
     tex.minFilter = THREE.NearestFilter
   }
 }
-
-THREE.SceneUtils = {
-  createMultiMaterialObject: (geometry, materials) => {
-    let group = new THREE.Group()
-    materials.forEach(material => group.add(new THREE.Mesh(geometry, material)))
-    return group
-  },
-  detach: (child, parent, scene) => {
-    wn('THREE.SceneUtils: detach() has been deprecated. Use scene.attach( child ) instead.')
-    scene.attach(child)
-  },
-  attach: (child, scene, parent) => {
-    wn('THREE.SceneUtils: attach() has been deprecated. Use parent.attach( child ) instead.')
-    parent.attach(child)
-  }
+, showHelpers = () => {
+  scene.add(plane)
+  scene.add(splineCameraHelper)
+  scene.add(axesHelper)
+  scene.add(spotLightMesh)
+  scene.add(spotLightMesh2)  
+  // Wireframe sphere to visualize parent
+  parent.add(parentWireMesh)
 }
-
-let ctn = document.getElementById("three-ctn")
-, w = ctn.clientWidth
-, h = ctn.clientHeight
-, camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
-, splineCamera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
-, splineCameraHelper = new THREE.CameraHelper(splineCamera)
-, axesHelper = new THREE.AxesHelper(500)
-, renderer = new THREE.WebGLRenderer({ antialias: true })
-, controls = new THREE.OrbitControls(camera, renderer.domElement)
-, scene = new THREE.Scene()
-, gltfLoader = new THREE.GLTFLoader()
-, origin = new THREE.Vector3(0, 0, 0)
-, startPos = new THREE.Vector3(0, 0, 500)
-, cameraStartPos = new THREE.Vector3(0, 1300, 0)
-, plane = new THREE.Mesh(
-  new THREE.PlaneGeometry(1000, 1000, 32, 32),
-  new THREE.MeshBasicMaterial({
-    color: new THREE.Color('pink'), side: THREE.DoubleSide,
-    transparent: true, opacity: .1, wireframe: true
-  })
-)
-, parent = new THREE.Object3D()
-, parentWireMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(15, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2),
-  new THREE.MeshBasicMaterial({
-    color: new THREE.Color('blue'), side: THREE.DoubleSide,
-    transparent: true, opacity: .1, wireframe: true
-  })
-)
-, ship
-, planetArr = [
-  {
-    name: 'dagobah',
-    path: 'assets/dagobah/',
-    pos: new THREE.Vector3(-200, 0, 350),
-    planet: {        
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(1, 1), opacity: .8 },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Sluis sector",
-      system: "Dagobah System",
-      diameter: "14,410 km",
-      atmosphere: "Violent lightning storms, dense fog. Periods of torrential rainfalls.",
-      terrain: "Swamp, Bogs, Wetlands, Dry uplands",
-      about: "Dagobah was a planet in the Dagobah system, and one of the purest places in the galaxy within the Force. A remote world of swamps and forests, it served as a refuge for Jedi Grand Master Yoda during his exile after the destruction of the Jedi Order. Luke Skywalker received advanced training in the ways of the Force under Jedi Master Yoda on Dagobah, and it was later the place of Yoda's death and transformation into the Force.",
-    },
-  }, 
-  {
-    name: 'endor',
-    path: 'assets/endor/',
-    pos: new THREE.Vector3(-300, 0, 100),    
-    planet: {
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'bump.jpg', repeat: new THREE.Vector2(2, 2) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(3, 3), opacity: 1 },
-    },
-    moon: {
-      diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Moddell sector",
-      system: "Endor System",
-      diameter: "4,900 km",
-      atmosphere: "Breathable",
-      terrain: "Forests, Savannas, Mountains",
-      about: "Endor (also known as the Forest Moon of Endor or the Sanctuary Moon) was a small forested moon that orbited the Outer Rim planet of the same name and was the homeworld of the sentient Dulok, Ewok, and Yuzzum species, as well as the semi-sentient Gorax and Wistie races.",
-    },
-  },
-  {
-    name: 'geonosis',
-    path: 'assets/geonosis/',
-    pos: new THREE.Vector3(0, 0, 50),    
-    planet: {        
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'bump.jpg', repeat: new THREE.Vector2(2, 2) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-    },
-    rings: {
-      diffuse: { v: 'rings-txt.png', repeat: new THREE.Vector2(2, 2) },
-      alpha: { v: 'rings-op3.png', repeat: new THREE.Vector2(2, 2) },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Arkanis sector",
-      system: "Geonosis System",
-      diameter: "11,370 km",
-      atmosphere: "Breathable, Arid Desert",
-      terrain: "Deserts, Mesas, Mountains",
-      about: "Geonosis, referred to as Geonosia by some natives, was the desert home planet of the Geonosians. It was the Confederacy of Independent Systems' first capital and hosted its major battle droid foundries. It was the site of the Battle of Geonosis, the opening conflict of the Clone Wars, as well as the subsequent invasion by the Galactic Republic.",
-    },
-  },
-  {
-    name: 'hoth',
-    path: 'assets/hoth/',
-    pos: new THREE.Vector3(250, 0, 50),        
-    planet: {        
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .8 },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Anoat sector",
-      system: "Hoth System",
-      diameter: "7,200 km",
-      atmosphere: "Breathable, Frigid",
-      terrain: "Frozen ice plains, glaciers, mountains",
-      about: "Hoth was a remote, icy planet that was the sixth planet in the star system of the same name. It notably hosted Echo Base, the temporary headquarters of the Alliance to Restore the Republic, until the Galactic Empire located the Rebels, initiating a major confrontation known as the Battle of Hoth.",
-    },
-  },
-  {
-    name: 'corsucant',
-    path: 'assets/corsucant/',
-    pos: new THREE.Vector3(475, 0, -125),        
-    planet: {        
-      diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'kj2.jpg', repeat: new THREE.Vector2(2, 2) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-    },
-    info: {
-      region: "Core Worlds",
-      sector: "Corusca sector",
-      system: "Coruscant System",
-      diameter: "12,240 km",
-      atmosphere: "Breathable, Temperate (artificial)",
-      terrain: "Ecumenopolis",
-      about: "Coruscant, also known as Imperial Center during the rule of the Galactic Empire, was an ecumenopolis—a city-covered planet, collectively known as Galactic City—in the Coruscant system of the Core Worlds. Noted for its cosmopolitan culture and towering skyscrapers, Coruscant's population consisted of approximately one trillion citizens hailing from a vast array of both humanoid and alien species.",
-    },
-  },
-  {
-    name: 'naboo',
-    path: 'assets/naboo/',
-    pos: new THREE.Vector3(250, 0, -300),    
-    planet: {        
-      diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(5, 5) },
-      bump: { v: 'dryleave.jpg', repeat: new THREE.Vector2(5, 5) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-    },
-    moon: {
-      diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
-    },
-    info: {
-      region: "Mid Rim",
-      sector: "Chommell sector",
-      system: "Naboo System",
-      diameter: "12,120 km",
-      atmosphere: "Oxygen Mix, Temperate",
-      terrain: "Rolling grassy plains, Swamps, Grassy hills. Forests, Mountains",
-      about: "Naboo was a planet that was the sector capital of the Chommell sector in the Mid Rim, near the border with the Outer Rim Territories. The planet had an unusual plasma core, and its surface was a largely unspoiled world with large plains, swamps and seas.",
-    },
-  }, 
-  {
-    name: 'tattooine',
-    path: 'assets/tattooine/',
-    pos: new THREE.Vector3(-100, 0, -350),    
-    planet: {        
-      diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(3, 3) },
-      bump: { v: 'bump2.jpg', repeat: new THREE.Vector2(3, 3) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-    },
-    moon: {
-      diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Arkanis sector",
-      system: "Tatoo System",
-      diameter: "10,465 km",
-      atmosphere: "Breathable",
-      terrain: "Canyons, Desert, Mountains, Rocky bluffs",
-      about: "Tatooine was a sparsely inhabited circumbinary desert planet located in the galaxy's Outer Rim Territories. It was the homeworld to the influential Anakin and Luke Skywalker, who would go on to shape galactic history. Part of a binary star system, the planet was oppressed by scorching suns, resulting in the world lacking the necessary surface water to sustain large populations.",
-    },
-  }, 
-  {
-    name: 'yavin',
-    path: 'assets/yavin/',
-    pos: new THREE.Vector3(-400, 0, -250),    
-    planet: {        
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },
-      bump: { v: 'bump.jpg', repeat: new THREE.Vector2(3, 3) },     
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .7 },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Gordian Reach",
-      system: "Yavin System",
-      diameter: "200,000 km",
-      atmosphere: "Uninhabitable",
-      terrain: "Gas",
-      about: "Yavin was an orange gas giant, nearly 200,000 kilometers in diameter,[4] located in the Outer Rim Territories.[1] It was orbited by twenty-six moons,[2] three of which could sustain humanoid life.[4] One of those moons, Yavin 4, was once home to the ancient Massassi warriors[1] and was used by the Rebel Alliance.[6]",
-    },
-  }, 
-  {
-    name: 'yavin-4',
-    path: 'assets/yavin-4/',
-    pos: new THREE.Vector3(-350, 0, 0),    
-    planet: {        
-      diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },
-      bump: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },  
-      clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-    },
-    moon: {
-      diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-      bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
-    },
-    info: {
-      region: "Outer Rim Territories",
-      sector: "Gordian Reach",
-      system: "Yavin System",
-      diameter: "10,200 km",
-      atmosphere: "Breathable, Temperate",
-      terrain: "Jungles",
-      about: "Yavin 4 was the jungle-covered fourth moon in orbit around the red gas giant Yavin. Prior to and during the Galactic Civil War, it hosted the headquarters of the Alliance to Restore the Republic, a group of resistance fighters that opposed the dominant Galactic Empire.[2] Following a major battle that took place around Yavin,[5] the Alliance relocated its headquarters to Hoth.[12]",
-    },
-  }
-]
-, closest = { name: "" }
-, fraction = 0
-, normal = new THREE.Vector3()
-, tube
-, tubeMesh
-// , currCam = splineCamera
-, currCam = camera
-, angle = { 
-  from: Math.PI / 2,
-  current: Math.PI / 2 
+, hideHelpers = () => {
+  scene.remove(plane)
+  scene.remove(splineCameraHelper)
+  scene.remove(axesHelper)
+  scene.remove(spotLightMesh)
+  scene.remove(spotLightMesh2)    
+  parent.remove(parentWireMesh)
 }
 , Params = function () {
   return {
     shipSpeed: 0.0001
-    , tubeOpacity: 0.2
+    , tubeOpacity: .2
     , showFog: false
     , fogDistance: 400
-    , helpers: true
-    , followCam: false  
+    , helpers: false
+    , followCam: false
     , normal: function () { currCam = camera }
     , spline: function () { currCam = splineCamera }
     , rotateCam: function () {
       // rotateCameraAboutPoint(splineCamera, ship.getWorldPosition(), new THREE.Vector3(0, 1, 0), Math.PI / 2, true)
-      TweenMax.to(angle, 1, {
-        from: "+="+Math.PI / 2,
-        onUpdate: function(){
+      TweenMax.to(angle, .3, {
+        from: "+=" + Math.PI / 2,
+        onUpdate: function () {
           // Keep updating in animate() to continuously look at planet
           rotateCameraAboutPoint(
-            splineCamera, ship.getWorldPosition(), new THREE.Vector3(0, 1, 0),
-            this.target.from - angle.current, true
+            splineCamera, parent.position, new THREE.Vector3(0, 1, 0),
+            this.target.from - angle.current, true, true
           )
           angle.current = this.target.from
         }
       })
     }
+    , lookAtPlanet: lookAtPlanet
+    , lookAtShip: lookAtShip
     , message: 'Customize here'
     , getState: function () { l(this) }
-  }  
+  }
 }
-, params = new Params()
-, fog = new THREE.Fog(0x000000, 1, params.fogDistance)
+
+let ctn = document.getElementById("three-ctn")
+  , w = ctn.clientWidth
+  , h = ctn.clientHeight
+  , renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+  , scene = new THREE.Scene()
+  , camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
+  , splineCamera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
+  , splineCameraHelper = new THREE.CameraHelper(splineCamera)
+  , axesHelper = new THREE.AxesHelper(500)
+  , controls = new THREE.OrbitControls(camera, renderer.domElement)
+  , spotLightMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(5, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2),
+    new THREE.MeshPhongMaterial({ color: 0xffff00 })
+  )
+  , spotLight = new THREE.DirectionalLight(0xffffff, 1)
+  , lightPos = new THREE.Vector3(500, 350, 500)
+  , spotLightMesh2 = new THREE.Mesh(
+    new THREE.SphereGeometry(5, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2),
+    new THREE.MeshPhongMaterial({ color: 0xffff00 })
+  )
+  , spotLight2 = new THREE.DirectionalLight(0xffffff, 1)
+  , lightPos2 = new THREE.Vector3(-500, 350, -500)
+  , manager = new THREE.LoadingManager()
+  , texLoader = new THREE.TextureLoader(manager)
+  , gltfLoader = new THREE.GLTFLoader(manager)
+  , origin = new THREE.Vector3(0, 0, 0)
+  , startPos = new THREE.Vector3(0, 0, 500)
+  , cameraStartPos = new THREE.Vector3(0, 1300, 0)
+  , plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(1000, 1000, 32, 32),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color('pink'), side: THREE.DoubleSide,
+      transparent: true, opacity: .1, wireframe: true
+    })
+  )
+  , parent = new THREE.Object3D()
+  , parentWireMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(15, 20, 20, 0, Math.PI * 2, 0, Math.PI * 2),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color('blue'), side: THREE.DoubleSide,
+      transparent: true, opacity: .1, wireframe: true
+    })
+  )
+  , ship
+  , shipGroup = new THREE.Group()
+  , exhaust = new SPE.Group({
+    texture: { value: texLoader.load("assets/smokeparticle.png") },
+    maxParticleCount: 500
+  })
+  , exhaust2 = new SPE.Group({
+    texture: { value: texLoader.load("assets/smokeparticle.png") },
+    maxParticleCount: 500
+  })
+  , exhaust3 = new SPE.Group({
+    texture: { value: texLoader.load("assets/smokeparticle.png") },
+    maxParticleCount: 500
+  })
+  , planetArr = [
+    {
+      name: 'endor',
+      path: 'assets/endor/',
+      pos: new THREE.Vector3(-200, 0, 375),
+      side: "left",
+      planet: {
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(3, 3), opacity: 1 },
+      },
+      moon: {
+        diffuse: { v: 'moon_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moon_new.jpg', repeat: new THREE.Vector2(2, 2) },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Moddell sector",
+        system: "Endor System",
+        diameter: "4,900 km",
+        atmosphere: "Breathable",
+        terrain: "Forests, Savannas, Mountains",
+        about: "Endor (also known as the Forest Moon of Endor or the Sanctuary Moon) was a small forested moon that orbited the Outer Rim planet of the same name and was the homeworld of the sentient Dulok, Ewok, and Yuzzum species, as well as the semi-sentient Gorax and Wistie races.",
+      },
+    },
+    {
+      name: 'dagobah',
+      path: 'assets/dagobah/',
+      pos: new THREE.Vector3(-350, 0, 100),    
+      side: "left",
+      planet: {        
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(1, 1), opacity: .8 },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Sluis sector",
+        system: "Dagobah System",
+        diameter: "14,410 km",
+        atmosphere: "Violent lightning storms, dense fog. Periods of torrential rainfalls.",
+        terrain: "Swamp, Bogs, Wetlands, Dry uplands",
+        about: "Dagobah was a planet in the Dagobah system, and one of the purest places in the galaxy within the Force. A remote world of swamps and forests, it served as a refuge for Jedi Grand Master Yoda during his exile after the destruction of the Jedi Order. Luke Skywalker received advanced training in the ways of the Force under Jedi Master Yoda on Dagobah, and it was later the place of Yoda's death and transformation into the Force.",
+      },
+    },
+    {
+      name: 'geonosis',
+      path: 'assets/geonosis/',
+      pos: new THREE.Vector3(0, 0, 20),    
+      side: "right",
+      planet: {        
+        diffuse: { v: 'diffuse_new.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'bump_new.jpg', repeat: new THREE.Vector2(2, 2) },     
+        clouds: { v: 'clouds_new.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+      },
+      rings: {
+        diffuse: { v: 'rings-txt_new.png', repeat: new THREE.Vector2(2, 2) },
+        alpha: { v: 'rings-op3_new.png', repeat: new THREE.Vector2(2, 2) },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Arkanis sector",
+        system: "Geonosis System",
+        diameter: "11,370 km",
+        atmosphere: "Breathable, Arid Desert",
+        terrain: "Deserts, Mesas, Mountains",
+        about: "Geonosis, referred to as Geonosia by some natives, was the desert home planet of the Geonosians. It was the Confederacy of Independent Systems' first capital and hosted its major battle droid foundries. It was the site of the Battle of Geonosis, the opening conflict of the Clone Wars, as well as the subsequent invasion by the Galactic Republic.",
+      },
+    },
+    {
+      name: 'tattooine',
+      path: 'assets/tattooine/',
+      pos: new THREE.Vector3(300, 0, 200),
+      side: "left",
+      planet: {
+        diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(3, 3) },
+        bump: { v: 'bump2.jpg', repeat: new THREE.Vector2(3, 3) },
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+      },
+      moon: {
+        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Arkanis sector",
+        system: "Tatoo System",
+        diameter: "10,465 km",
+        atmosphere: "Breathable",
+        terrain: "Canyons, Desert, Mountains, Rocky bluffs",
+        about: "Tatooine was a sparsely inhabited circumbinary desert planet located in the galaxy's Outer Rim Territories. It was the homeworld to the influential Anakin and Luke Skywalker, who would go on to shape galactic history. Part of a binary star system, the planet was oppressed by scorching suns, resulting in the world lacking the necessary surface water to sustain large populations.",
+      },
+    }, 
+    {
+      name: 'coruscant',
+      path: 'assets/coruscant/',
+      pos: new THREE.Vector3(460, 0, -125),        
+      side: "right",
+      planet: {        
+        diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'kj2.jpg', repeat: new THREE.Vector2(2, 2) },     
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+      },
+      info: {
+        region: "Core Worlds",
+        sector: "Corusca sector",
+        system: "Coruscant System",
+        diameter: "12,240 km",
+        atmosphere: "Breathable, Temperate (artificial)",
+        terrain: "Ecumenopolis",
+        about: "Coruscant, also known as Imperial Center during the rule of the Galactic Empire, was an ecumenopolis—a city-covered planet, collectively known as Galactic City—in the Coruscant system of the Core Worlds. Noted for its cosmopolitan culture and towering skyscrapers, Coruscant's population consisted of approximately one trillion citizens hailing from a vast array of both humanoid and alien species.",
+      },
+    },
+    {
+      name: 'naboo',
+      path: 'assets/naboo/',
+      pos: new THREE.Vector3(375, 0, -375),    
+      side: "left",
+      planet: {        
+        diffuse: { v: 'diffuse2.jpg', repeat: new THREE.Vector2(5, 5) },
+        bump: { v: 'dryleave.jpg', repeat: new THREE.Vector2(5, 5) },     
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+      },
+      moon: {
+        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
+      },
+      info: {
+        region: "Mid Rim",
+        sector: "Chommell sector",
+        system: "Naboo System",
+        diameter: "12,120 km",
+        atmosphere: "Oxygen Mix, Temperate",
+        terrain: "Rolling grassy plains, Swamps, Grassy hills. Forests, Mountains",
+        about: "Naboo was a planet that was the sector capital of the Chommell sector in the Mid Rim, near the border with the Outer Rim Territories. The planet had an unusual plasma core, and its surface was a largely unspoiled world with large plains, swamps and seas.",
+      },
+    },
+    {
+      name: 'hoth',
+      path: 'assets/hoth/',
+      pos: new THREE.Vector3(60, 0, -400),
+      side: "right",
+      planet: {
+        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'diffuse.jpg', repeat: new THREE.Vector2(2, 2) },
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .8 },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Anoat sector",
+        system: "Hoth System",
+        diameter: "7,200 km",
+        atmosphere: "Breathable, Frigid",
+        terrain: "Frozen ice plains, glaciers, mountains",
+        about: "Hoth was a remote, icy planet that was the sixth planet in the star system of the same name. It notably hosted Echo Base, the temporary headquarters of the Alliance to Restore the Republic, until the Galactic Empire located the Rebels, initiating a major confrontation known as the Battle of Hoth.",
+      },
+    },
+    {
+      name: 'yavin',
+      path: 'assets/yavin/',
+      pos: new THREE.Vector3(-250, 0, -400),
+      side: "left",
+      planet: {
+        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },
+        bump: { v: 'bump.jpg', repeat: new THREE.Vector2(3, 3) },
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .7 },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Gordian Reach",
+        system: "Yavin System",
+        diameter: "200,000 km",
+        atmosphere: "Uninhabitable",
+        terrain: "Gas",
+        about: "Yavin was an orange gas giant, nearly 200,000 kilometers in diameter,[4] located in the Outer Rim Territories.[1] It was orbited by twenty-six moons,[2] three of which could sustain humanoid life.[4] One of those moons, Yavin 4, was once home to the ancient Massassi warriors[1] and was used by the Rebel Alliance.[6]",
+      },
+    }, 
+    {
+      name: 'yavin-4',
+      path: 'assets/yavin-4/',
+      pos: new THREE.Vector3(-450, 0, -200),    
+      side: null,
+      planet: {        
+        diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },
+        bump: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },  
+        clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
+      },
+      moon: {
+        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
+      },
+      info: {
+        region: "Outer Rim Territories",
+        sector: "Gordian Reach",
+        system: "Yavin System",
+        diameter: "10,200 km",
+        atmosphere: "Breathable, Temperate",
+        terrain: "Jungles",
+        about: "Yavin 4 was the jungle-covered fourth moon in orbit around the red gas giant Yavin. Prior to and during the Galactic Civil War, it hosted the headquarters of the Alliance to Restore the Republic, a group of resistance fighters that opposed the dominant Galactic Empire.[2] Following a major battle that took place around Yavin,[5] the Alliance relocated its headquarters to Hoth.[12]",
+      },
+    }
+  ]
+  , closest = { name: "", line: { lineLength: 0 } }
+  , starField
+  , fraction = 0
+  , normal = new THREE.Vector3()
+  , tube
+  , tubeMesh
+  , currCam = splineCamera
+  // , currCam = camera
+  , params = new Params()
+  , angle = { from: Math.PI / 2, current: Math.PI / 2 }
+  , lookAtObj = new THREE.Vector3(0, 0, 0)
+  , fog = new THREE.Fog(0x000000, 1, params.fogDistance)
+  , splineCameraTarget = parent
+;
 
 function init() {
   initScene()
@@ -326,11 +372,12 @@ function init() {
   addShip()
   addPlanets()
   addPath()
+  addStars()
 }
 
-function initScene(){
+function initScene() {
   // Renderer settings
-  renderer.setClearColor('#000000')    
+  renderer.setClearColor(0x000000, 1)    
   renderer.setSize(w, h)
   renderer.domElement.style.position = "absolute"
   renderer.domElement.style.top = renderer.domElement.style.left = 0
@@ -343,30 +390,14 @@ function initScene(){
   scene.add(new THREE.AmbientLight(0xffffff, .2))
   
   // Fog
-  if (params.showFog) scene.fog = fog
-
+  if (params.showFog) scene.fog = fog  
+  
   // Spotlight and representational mesh
-  let spotLightMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(5, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2),
-    new THREE.MeshPhongMaterial({ color: 0xffff00 })
-  )
-  , lightPos = new THREE.Vector3(500, 350, 500)
-  , spotLight = new THREE.DirectionalLight(0xffffff, 1)
-  
-  spotLightMesh.position.copy(lightPos)
-  scene.add(spotLightMesh)  
+  spotLightMesh.position.copy(lightPos)  
   spotLight.position.copy(lightPos)
-  scene.add(spotLight)
-  
-  let spotLightMesh2 = new THREE.Mesh(
-    new THREE.SphereGeometry(5, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2),
-    new THREE.MeshPhongMaterial({ color: 0xffff00 })
-  )
-  , lightPos2 = new THREE.Vector3(-500, 350, -500)
-  , spotLight2 = new THREE.DirectionalLight(0xffffff, 1)
+  scene.add(spotLight)    
   
   spotLightMesh2.position.copy(lightPos2)
-  scene.add(spotLightMesh2)  
   spotLight2.position.copy(lightPos2)
   scene.add(spotLight2)
 
@@ -374,13 +405,10 @@ function initScene(){
   plane.rotation.x = Math.PI / 2
   
   // Helpers
-  scene.add(plane)
-  scene.add(splineCameraHelper)
-  scene.add(axesHelper)
-  parent.add(parentWireMesh)
+  if (params.helpers) showHelpers()
 }
 
-function initGUI(){
+function initGUI() {
   let gui = new dat.GUI()
   , op = gui.add(params, 'tubeOpacity', 0, 1)  
   op.onChange(value => {
@@ -402,71 +430,135 @@ function initGUI(){
   gui.add(params, 'followCam')
   
   let he = gui.add(params, 'helpers')
-  he.onChange(value => {
-    if(value){
-      scene.add(plane)
-      scene.add(splineCameraHelper)
-      scene.add(axesHelper)
-      parent.add(parentWireMesh)
-    } else{
-      scene.remove(plane)
-      scene.remove(splineCameraHelper)
-      scene.remove(axesHelper)
-      parent.remove(parentWireMesh)
-    }
-  })
+  he.onChange(value => { value ? showHelpers() : hideHelpers() })
 
   gui.add(params, 'normal')
   gui.add(params, 'spline')
   gui.add(params, 'rotateCam')
-  gui.add(params, 'message')
+  gui.add(params, 'lookAtPlanet')
+  gui.add(params, 'lookAtShip')
   gui.add(params, 'getState')
+  gui.add(params, 'message')
 }
 
 function addShip() {
-  gltfLoader.load('assets/start-destroyer/scene.gltf',    
+  gltfLoader.load('assets/star-destroyer/scene.gltf',    
     gltf => {
+      // The ship
       ship = gltf.scene.children[0]
-      ship.scale.set(.005, .005, .005)
+      ship.scale.multiplyScalar(.0035)
       ship.rotation.z = Math.PI / 2
-
-      // let shipGroup = new THREE.Group()
-      // shipGroup.add(ship)
-      parent.add(ship)
-
-      splineCamera.position.x = 15
-      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(0, 1, 0), 3 * Math.PI / 2, false)
-      rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(1, 0, 0), -.2, false)  
       
-      // gltf.animations; // Array<THREE.AnimationClip>
-      // gltf.scene; // THREE.Scene
-      // gltf.scenes; // Array<THREE.Scene>
-      // gltf.cameras; // Array<THREE.Camera>
-      // gltf.asset; // Object
+      shipGroup.add(ship)
+      parent.add(shipGroup)
+      // parent.add(ship)
+      
+      // The 3 exhaust flames
+      exhaust.addEmitter(
+        new SPE.Emitter({
+          maxAge: {
+            value: 0.2
+          },
+          position: {
+            value: new THREE.Vector3(0, 0, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          acceleration: {
+            value: new THREE.Vector3(0, .5, 0),
+            spread: new THREE.Vector3(0, .25, 0)
+          },
+          velocity: {
+            value: new THREE.Vector3(0, .25, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          color: {
+            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+          },
+          size: {
+            value: 2
+          },
+          particleCount: 20
+        })
+      )
+      exhaust.mesh.position.z = 4
+      exhaust.mesh.rotation.x = Math.PI / 2
+      exhaust.material.fog = false
+      shipGroup.add(exhaust.mesh)    
+      
+      exhaust2.addEmitter(
+        new SPE.Emitter({
+          maxAge: {
+            value: 0.2
+          },
+          position: {
+            value: new THREE.Vector3(0, 0, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          acceleration: {
+            value: new THREE.Vector3(0, .5, 0),
+            spread: new THREE.Vector3(0, .25, 0)
+          },
+          velocity: {
+            value: new THREE.Vector3(0, .25, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          color: {
+            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+          },
+          size: {
+            value: 2
+          },
+          particleCount: 20
+        })
+      )
+      exhaust2.mesh.position.z = 4      
+      exhaust2.mesh.position.x = .75
+      exhaust2.mesh.rotation.x = Math.PI / 2
+      exhaust2.material.fog = false
+      shipGroup.add(exhaust2.mesh)    
+      
+      exhaust3.addEmitter(
+        new SPE.Emitter({
+          maxAge: {
+            value: 0.2
+          },
+          position: {
+            value: new THREE.Vector3(0, 0, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          acceleration: {
+            value: new THREE.Vector3(0, .5, 0),
+            spread: new THREE.Vector3(0, .25, 0)
+          },
+          velocity: {
+            value: new THREE.Vector3(0, .25, 0),
+            spread: new THREE.Vector3(0, .5, 0)
+          },
+          color: {
+            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+          },
+          size: {
+            value: 2
+          },
+          particleCount: 20
+        })
+      )
+      exhaust3.mesh.position.z = 4
+      exhaust3.mesh.position.x = -.75
+      exhaust3.mesh.rotation.x = Math.PI / 2
+      exhaust3.material.fog = false
+      shipGroup.add(exhaust3.mesh)
+
+      splineCamera.position.x = -15
+      rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(0, 1, 0), Math.PI / 2, true, true)
+      rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(1, 0, 0), -.3, true, true)        
     },
     xhr => l((xhr.loaded / xhr.total * 100) + '% loaded'),
     error => l('An error happened', error)
   )
 
-  // Wireframe sphere to visualize parent
-  parent.add(parentWireMesh)
-
-  // // Cone for ship (replace by actual model)
-  // ship = new THREE.Mesh(
-  //   new THREE.ConeGeometry(2, 10, 16), 
-  //   new THREE.MeshPhongMaterial({ color: 0x00ff00 })
-  // )
-  // ship.rotation.x = -Math.PI / 2
-  // ship.position.y = 5
-  // parent.add(ship)
-
-  // // Set splineCamera to always look at ship, and rotate around it
-  // splineCamera.position.x = 20
-  // rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(0, 1, 0), 3 * Math.PI / 2, false)
-  // rotateCameraAboutPoint(splineCamera, ship.position, new THREE.Vector3(1, 0, 0), -.8, false)  
-  
   parent.add(splineCamera)
-  parent.position.set(0, 0, 500)
+  parent.position.copy(startPos)
   scene.add(parent)
 }
 
@@ -497,7 +589,7 @@ function addPlanets() {
     planetGroup.add(
       new THREE.Mesh(pl_geo, new THREE.MeshPhongMaterial({ 
         color: 0xffffff, map: diffuse,
-        specularMap: specular, bumpMap: bump, bumpScale: .1,
+        specularMap: specular, bumpMap: bump, bumpScale: .5,
       })
     ))
 
@@ -528,7 +620,7 @@ function addPlanets() {
       setTexture(moonBump, moon, "bump")
 
       let moonMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(4, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2), 
+        new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2), 
         new THREE.MeshPhongMaterial({
           color: 0xffffff,
           map: moonDiffuse,
@@ -560,8 +652,8 @@ function addPlanets() {
         })
       )
       ringsMesh.position.set(0, 0, 0)
-      ringsMesh.rotation.x = Math.PI / 2 + .1
-      ringsMesh.rotation.y = .05
+      ringsMesh.rotation.x = Math.PI / 2 - .1
+      ringsMesh.rotation.y = -.05
       ringsMesh.type = "rings"
 
       planetGroup.add(ringsMesh)
@@ -583,32 +675,29 @@ function addPlanets() {
   }) 
 }
 
-function addPath(){
+function addPath() {
   // Path that the ship will follow  
   tube = new THREE.TubeGeometry(
     new THREE.CatmullRomCurve3([
       startPos,
       new THREE.Vector3(0, 0, 350),
       new THREE.Vector3(-300, 0, 300),
-      new THREE.Vector3(-400, 0, 200),
-      new THREE.Vector3(-350, 0, 100),
-      new THREE.Vector3(-200, 0, 50),
-      new THREE.Vector3(50, 0, 100),
-      new THREE.Vector3(250, 0, 0),
+      new THREE.Vector3(-350, 0, 200),
+      new THREE.Vector3(-300, 0, 100),
+      new THREE.Vector3(50, 0, -50),
+      new THREE.Vector3(250, 0, 250),
+      new THREE.Vector3(300, 0, 275),
       new THREE.Vector3(400, 0, 0),
-      new THREE.Vector3(450, 0, -100),
-      new THREE.Vector3(350, 0, -250),
-      new THREE.Vector3(250, 0, -350),
-      new THREE.Vector3(150, 0, -300),
-      new THREE.Vector3(0, 0, -250),
-      new THREE.Vector3(-100, 0, -300),
-      new THREE.Vector3(-200, 0, -400),
-      new THREE.Vector3(-350, 0, -350),
-      new THREE.Vector3(-450, 0, -250),
-      new THREE.Vector3(-350, 0, -50),
+      new THREE.Vector3(400, 0, -200),
+      new THREE.Vector3(450, 0, -350),
+      new THREE.Vector3(400, 0, -450),
+      new THREE.Vector3(50, 0, -350),
+      new THREE.Vector3(-250, 0, -450),
+      new THREE.Vector3(-350, 0, -400),
+      new THREE.Vector3(-420, 0, -250),
     ]), 500, 2, 3, false)
   
-  tubeMesh = THREE.SceneUtils.createMultiMaterialObject(
+  tubeMesh = createMultiMaterialObject(
     tube,
     [
       new THREE.MeshLambertMaterial({
@@ -631,7 +720,101 @@ function addPath(){
   scene.add(tubeMesh)
 }
 
-function animatePlanets(){
+function addStars() {
+  let starsGeometry = new THREE.Geometry(); // creates new geometry
+
+  for (let i = 0; i < 1000; i++) {
+    let star = new THREE.Vector3(
+      // changing number will decrease or increase particle density;
+      // the smaller the number the more dense the particles
+      THREE.Math.randFloatSpread(1500),
+      THREE.Math.randFloatSpread(500),
+      THREE.Math.randFloatSpread(1500),
+    )
+    starsGeometry.vertices.push(star)
+  }
+  starField = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ 
+    color: 0xffffff, fog: false 
+  }))
+  scene.add(starField)
+}
+
+function lookAtShip () {
+  splineCameraTarget = null
+  // l(splineCameraTarget, parent)
+  lookAtObj.copy(closest.planetGroup.position)
+  let lookAtTween = TweenMax.to(lookAtObj, .4, {
+    x: parent.position.x,
+    y: parent.position.y,
+    z: parent.position.z,
+    onUpdate: function () {
+      splineCamera.lookAt(new THREE.Vector3(this.target.x, this.target.y, this.target.z))
+      // Dynamic value for parent since it is moving
+      lookAtTween.updateTo({
+        x: parent.position.x,
+        y: parent.position.y,
+        z: parent.position.z,
+      }, false)
+    },
+    // ease: Linear.easeNone
+  })
+
+  new TimelineMax({
+    onComplete: function () { splineCameraTarget = parent }
+  })
+  .add(lookAtTween, "lb0")
+  .to(angle, .6, {
+    from: Math.PI / 2,
+    onUpdate: function () {
+      // Keep updating in animate() to continuously look at planet
+      rotateCameraAboutPoint(
+        splineCamera, parent.position, new THREE.Vector3(0, 1, 0),
+        this.target.from - angle.current, true, true
+      )
+      angle.current = this.target.from
+    }
+  }, "lb1")
+  .to(splineCamera, .6, {
+    fov: 35,
+    onUpdate: function () { this.target.updateProjectionMatrix() }
+  }, "lb1")
+}
+
+function lookAtPlanet() {
+  splineCameraTarget = null
+  // l(splineCameraTarget, closest)
+  lookAtObj.copy(parent.position)
+  let lookAtTween = TweenMax.to(lookAtObj, 1, {
+    x: closest.planetGroup.position.x,
+    y: closest.planetGroup.position.y,
+    z: closest.planetGroup.position.z,
+    onUpdate: function () {
+      splineCamera.lookAt(new THREE.Vector3(this.target.x, this.target.y, this.target.z))
+    }
+  })
+
+  new TimelineMax({
+    onComplete: function () { splineCameraTarget = closest.planetGroup }
+  })
+  .to(angle, 1, {
+    from: closest.side === "left" ? Math.PI : 0,
+    onUpdate: function () {
+      // Keep updating in animate() to continuously look at planet
+      rotateCameraAboutPoint(
+        splineCamera, parent.position, new THREE.Vector3(0, 1, 0),
+        this.target.from - angle.current, true, true
+      )
+      angle.current = this.target.from
+    }
+  }, "lb0")
+  .add(lookAtTween, "lb0")
+  .to(splineCamera, 1, {
+    fov: 45,
+    onUpdate: function () { this.target.updateProjectionMatrix() }    
+  }, "lb0")
+}
+
+function animatePlanets() {
   planetArr.forEach(obj => {
     let planetObject = obj.planetGroup
     , children = planetObject.children
@@ -662,6 +845,16 @@ function findNearest() {
   if (oldClosest.name !== closest.name) {
     l("Closest:", closest.name)
   }
+
+  if (closest.line.lineLength < 100){
+    // l("Focus on:", closest.name)
+    // Animate from current lookAt to planet
+    // splineCameraTarget = closest.planetGroup
+  } else{
+    // l("Focus on ship")
+    // Animate from current lookAt to ship
+    // splineCameraTarget = parent
+  }
 }
 
 function renderFollowCamera() {
@@ -682,7 +875,7 @@ function renderFollowCamera() {
   , dir = path.getTangentAt(t)
   , lookAt = path.getPointAt((t + 30 / path.getLength()) % 1).copy(pos).add(dir)
 
-  if(closest.name.length) splineCamera.lookAt(closest.planetGroup.position)
+  if (splineCameraTarget) splineCamera.lookAt(splineCameraTarget.position)
   
   parent.position.copy(pos)
   parent.matrix.lookAt(parent.position, lookAt, normal)
@@ -693,6 +886,9 @@ function render() {
   params.followCam && renderFollowCamera()
   findNearest()
   animatePlanets()
+  exhaust.tick(0.005)
+  exhaust2.tick(0.005)
+  exhaust3.tick(0.005)
 
   renderer.render(scene, currCam)
 }
@@ -702,8 +898,24 @@ function animate() {
   requestAnimationFrame(animate)
 }
 
+// Resize Three.js scene on window resize
+function onWindowResize() {
+  w = ctn.clientWidth
+  h = ctn.clientHeight
+  camera.aspect = w / h
+  camera.updateProjectionMatrix()
+
+  splineCamera.aspect = w / h
+  splineCamera.updateProjectionMatrix()
+
+  renderer.setSize(w, h)
+}
+
 init()
 
 // Either of the below must be used. If using GSAP, use 2nd
 // animate()
 TweenLite.ticker.addEventListener("tick", render)
+
+// Listen for resizing of window
+window.addEventListener("resize", onWindowResize, false)
