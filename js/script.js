@@ -1,66 +1,6 @@
-/* eslint-disable no-undef */
 const wc = window.console
 , l = console.log.bind(wc)
 , cl = console.clear.bind(wc)
-, wn = console.warn.bind(wc)
-, rotateCameraAboutPoint = (obj, point, axis, theta, pointIsWorld, lookAt) => {
-  // obj - your object (THREE.Object3D or derived)
-  // point - the point of rotation (THREE.Vector3)
-  // axis - the axis of rotation (normalized THREE.Vector3)
-  // theta - radian value of rotation
-  // pointIsWorld - boolean indicating the point is in world coordinates (default = false)
-  pointIsWorld = !!pointIsWorld
-
-  if (pointIsWorld) {
-    obj.parent.localToWorld(obj.position); // compensate for world coordinate
-  }
-
-  obj.position.sub(point); // remove the offset
-  obj.position.applyAxisAngle(axis, theta); // rotate the POSITION
-  obj.position.add(point); // re-add the offset
-
-  if (pointIsWorld) {
-    obj.parent.worldToLocal(obj.position); // undo world coordinates compensation
-  }
-
-  obj.rotateOnAxis(axis, theta); // rotate the OBJECT
-  if (lookAt) obj.lookAt(point)
-}
-, getDistance = (from, to) => {
-  let x0 = from.x, y0 = from.y, z0 = from.z  
-  , x1 = to.x, y1 = to.y, z1 = to.z
-
-  return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2) + Math.pow(z1 - z0, 2))
-}
-, createMultiMaterialObject = (geometry, materials) => {
-  let group = new THREE.Group()
-  materials.forEach(material => group.add(new THREE.Mesh(geometry, material)))
-  return group
-}
-, setTexture = (tex, pl, type) => {
-  if (tex) {
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.copy(pl[type].repeat)
-    tex.minFilter = THREE.NearestFilter
-  }
-}
-, showHelpers = () => {
-  scene.add(plane)
-  scene.add(splineCameraHelper)
-  scene.add(axesHelper)
-  scene.add(spotLightMesh)
-  scene.add(spotLightMesh2)  
-  // Wireframe sphere to visualize parent
-  parent.add(parentWireMesh)
-}
-, hideHelpers = () => {
-  scene.remove(plane)
-  scene.remove(splineCameraHelper)
-  scene.remove(axesHelper)
-  scene.remove(spotLightMesh)
-  scene.remove(spotLightMesh2)    
-  parent.remove(parentWireMesh)
-}
 , Params = function () {
   return {
     shipSpeed: 0.0001
@@ -91,14 +31,38 @@ const wc = window.console
     , getState: function () { l(this) }
   }
 }
+, StarWars = function(args) {
+  // Context wrapper
+  this.el = $(args.el)
 
-let ctn = document.getElementById("three-ctn")
+  // Audio to play the opening crawl
+  // this.audio = this.el.find('audio').get(0)
+
+  // The animation wrapper
+  this.animation = this.el.find('.animation')
+  this.cloned = this.animation.clone(true)
+  this.animation.remove()
+  // this.reset = function () {
+  //   this.cloned = this.animation.clone(true)
+  //   this.animation.remove()
+  //   this.animation = this.cloned
+  // }
+
+  // Remove animation and shows the start screen
+  // this.reset()
+
+  this.beginAnimation = function () {
+    this.el.append(this.cloned)
+  }
+}
+
+let ctn = $("#three-ctn")
   , w = ctn.clientWidth
   , h = ctn.clientHeight
   , renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   , scene = new THREE.Scene()
   , camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
-  , splineCamera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
+  , splineCamera = new THREE.PerspectiveCamera(35, w / h, 1, 10000)
   , splineCameraHelper = new THREE.CameraHelper(splineCamera)
   , axesHelper = new THREE.AxesHelper(500)
   , controls = new THREE.OrbitControls(camera, renderer.domElement)
@@ -115,8 +79,10 @@ let ctn = document.getElementById("three-ctn")
   , spotLight2 = new THREE.DirectionalLight(0xffffff, 1)
   , lightPos2 = new THREE.Vector3(-500, 350, -500)
   , manager = new THREE.LoadingManager()
-  , texLoader = new THREE.TextureLoader(manager)
-  , gltfLoader = new THREE.GLTFLoader(manager)
+  , loaders = {
+    texture: new THREE.TextureLoader(manager),
+    gltf: new THREE.GLTFLoader(manager),
+  }
   , origin = new THREE.Vector3(0, 0, 0)
   , startPos = new THREE.Vector3(0, 0, 500)
   , cameraStartPos = new THREE.Vector3(0, 1300, 0)
@@ -137,18 +103,7 @@ let ctn = document.getElementById("three-ctn")
   )
   , ship
   , shipGroup = new THREE.Group()
-  , exhaust = new SPE.Group({
-    texture: { value: texLoader.load("assets/smokeparticle.png") },
-    maxParticleCount: 500
-  })
-  , exhaust2 = new SPE.Group({
-    texture: { value: texLoader.load("assets/smokeparticle.png") },
-    maxParticleCount: 500
-  })
-  , exhaust3 = new SPE.Group({
-    texture: { value: texLoader.load("assets/smokeparticle.png") },
-    maxParticleCount: 500
-  })
+  , exhaust, exhaust2, exhaust3
   , planetArr = [
     {
       name: 'endor',
@@ -219,8 +174,8 @@ let ctn = document.getElementById("three-ctn")
       },
     },
     {
-      name: 'tattooine',
-      path: 'assets/tattooine/',
+      name: 'tatooine',
+      path: 'assets/tatooine/',
       pos: new THREE.Vector3(300, 0, 200),
       side: "left",
       planet: {
@@ -323,7 +278,7 @@ let ctn = document.getElementById("three-ctn")
         diameter: "200,000 km",
         atmosphere: "Uninhabitable",
         terrain: "Gas",
-        about: "Yavin was an orange gas giant, nearly 200,000 kilometers in diameter,[4] located in the Outer Rim Territories.[1] It was orbited by twenty-six moons,[2] three of which could sustain humanoid life.[4] One of those moons, Yavin 4, was once home to the ancient Massassi warriors[1] and was used by the Rebel Alliance.[6]",
+        about: "Yavin was an orange gas giant, nearly 200,000 kilometers in diameter, located in the Outer Rim Territories. It was orbited by twenty-six moons, three of which could sustain humanoid life. One of those moons, Yavin 4, was once home to the ancient Massassi warriors and was used by the Rebel Alliance.",
       },
     }, 
     {
@@ -347,7 +302,7 @@ let ctn = document.getElementById("three-ctn")
         diameter: "10,200 km",
         atmosphere: "Breathable, Temperate",
         terrain: "Jungles",
-        about: "Yavin 4 was the jungle-covered fourth moon in orbit around the red gas giant Yavin. Prior to and during the Galactic Civil War, it hosted the headquarters of the Alliance to Restore the Republic, a group of resistance fighters that opposed the dominant Galactic Empire.[2] Following a major battle that took place around Yavin,[5] the Alliance relocated its headquarters to Hoth.[12]",
+        about: "Yavin 4 was the jungle-covered fourth moon in orbit around the red gas giant Yavin. Prior to and during the Galactic Civil War, it hosted the headquarters of the Alliance to Restore the Republic, a group of resistance fighters that opposed the dominant Galactic Empire. Following a major battle that took place around Yavin, the Alliance relocated its headquarters to Hoth.",
       },
     }
   ]
@@ -364,7 +319,11 @@ let ctn = document.getElementById("three-ctn")
   , lookAtObj = new THREE.Vector3(0, 0, 0)
   , fog = new THREE.Fog(0x000000, 1, params.fogDistance)
   , splineCameraTarget = parent
-;
+  , isExecuted = false
+  , template = $("#tpl").text()
+  , options = { planetArr }
+  , intro = new StarWars({ el: '.starwars' })
+; 
 
 function init() {
   initScene()
@@ -373,15 +332,18 @@ function init() {
   addPlanets()
   addPath()
   addStars()
+  addListeners()
 }
 
 function initScene() {
   // Renderer settings
   renderer.setClearColor(0x000000, 1)    
   renderer.setSize(w, h)
-  renderer.domElement.style.position = "absolute"
-  renderer.domElement.style.top = renderer.domElement.style.left = 0
-  ctn.appendChild(renderer.domElement)
+  $(renderer.domElement).css({
+    position: "absolute",
+    top: 0, left: 0    
+  })
+  ctn.append(renderer.domElement)
 
   // Cameras and ambient light
   camera.position.copy(cameraStartPos)
@@ -405,7 +367,14 @@ function initScene() {
   plane.rotation.x = Math.PI / 2
   
   // Helpers
-  if (params.helpers) showHelpers()
+  if (params.helpers) showHelpers()  
+
+  // Parent object for ship, exhaust and splineCamera
+  parent.name = "ship"
+  parent.add(splineCamera)
+  parent.add(shipGroup)
+  parent.position.copy(startPos)
+  scene.add(parent)
 }
 
 function initGUI() {
@@ -441,155 +410,139 @@ function initGUI() {
   gui.add(params, 'message')
 }
 
-function addShip() {
-  gltfLoader.load('assets/star-destroyer/scene.gltf',    
-    gltf => {
-      // The ship
-      ship = gltf.scene.children[0]
-      ship.scale.multiplyScalar(.0035)
-      ship.rotation.z = Math.PI / 2
-      
-      shipGroup.add(ship)
-      parent.add(shipGroup)
-      // parent.add(ship)
-      
-      // The 3 exhaust flames
-      exhaust.addEmitter(
-        new SPE.Emitter({
-          maxAge: {
-            value: 0.2
-          },
-          position: {
-            value: new THREE.Vector3(0, 0, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          acceleration: {
-            value: new THREE.Vector3(0, .5, 0),
-            spread: new THREE.Vector3(0, .25, 0)
-          },
-          velocity: {
-            value: new THREE.Vector3(0, .25, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          color: {
-            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-          },
-          size: {
-            value: 2
-          },
-          particleCount: 20
-        })
-      )
-      exhaust.mesh.position.z = 4
-      exhaust.mesh.rotation.x = Math.PI / 2
-      exhaust.material.fog = false
-      shipGroup.add(exhaust.mesh)    
-      
-      exhaust2.addEmitter(
-        new SPE.Emitter({
-          maxAge: {
-            value: 0.2
-          },
-          position: {
-            value: new THREE.Vector3(0, 0, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          acceleration: {
-            value: new THREE.Vector3(0, .5, 0),
-            spread: new THREE.Vector3(0, .25, 0)
-          },
-          velocity: {
-            value: new THREE.Vector3(0, .25, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          color: {
-            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-          },
-          size: {
-            value: 2
-          },
-          particleCount: 20
-        })
-      )
-      exhaust2.mesh.position.z = 4      
-      exhaust2.mesh.position.x = .75
-      exhaust2.mesh.rotation.x = Math.PI / 2
-      exhaust2.material.fog = false
-      shipGroup.add(exhaust2.mesh)    
-      
-      exhaust3.addEmitter(
-        new SPE.Emitter({
-          maxAge: {
-            value: 0.2
-          },
-          position: {
-            value: new THREE.Vector3(0, 0, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          acceleration: {
-            value: new THREE.Vector3(0, .5, 0),
-            spread: new THREE.Vector3(0, .25, 0)
-          },
-          velocity: {
-            value: new THREE.Vector3(0, .25, 0),
-            spread: new THREE.Vector3(0, .5, 0)
-          },
-          color: {
-            value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-          },
-          size: {
-            value: 2
-          },
-          particleCount: 20
-        })
-      )
-      exhaust3.mesh.position.z = 4
-      exhaust3.mesh.position.x = -.75
-      exhaust3.mesh.rotation.x = Math.PI / 2
-      exhaust3.material.fog = false
-      shipGroup.add(exhaust3.mesh)
+function addShip() {  
+  exhaust = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
+  exhaust2 = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
+  exhaust3 = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
+  
+  // The ship
+  ship.scale.multiplyScalar(.0035)
+  ship.rotation.z = Math.PI / 2
+  shipGroup.add(ship)
 
-      splineCamera.position.x = -15
-      rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(0, 1, 0), Math.PI / 2, true, true)
-      rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(1, 0, 0), -.3, true, true)        
-    },
-    xhr => l((xhr.loaded / xhr.total * 100) + '% loaded'),
-    error => l('An error happened', error)
+  // The 3 exhaust flames
+  exhaust.addEmitter(
+    new SPE.Emitter({
+      maxAge: {
+        value: 0.2
+      },
+      position: {
+        value: new THREE.Vector3(0, 0, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      acceleration: {
+        value: new THREE.Vector3(0, .5, 0),
+        spread: new THREE.Vector3(0, .25, 0)
+      },
+      velocity: {
+        value: new THREE.Vector3(0, .25, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      color: {
+        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+      },
+      size: {
+        value: 2
+      },
+      particleCount: 20
+    })
   )
+  exhaust.mesh.position.z = 4
+  exhaust.mesh.rotation.x = Math.PI / 2
+  exhaust.material.fog = false
+  shipGroup.add(exhaust.mesh)    
 
-  parent.add(splineCamera)
-  parent.position.copy(startPos)
-  scene.add(parent)
+  exhaust2.addEmitter(
+    new SPE.Emitter({
+      maxAge: {
+        value: 0.2
+      },
+      position: {
+        value: new THREE.Vector3(0, 0, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      acceleration: {
+        value: new THREE.Vector3(0, .5, 0),
+        spread: new THREE.Vector3(0, .25, 0)
+      },
+      velocity: {
+        value: new THREE.Vector3(0, .25, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      color: {
+        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+      },
+      size: {
+        value: 2
+      },
+      particleCount: 20
+    })
+  )
+  exhaust2.mesh.position.z = 4
+  exhaust2.mesh.position.x = .75
+  exhaust2.mesh.rotation.x = Math.PI / 2
+  exhaust2.material.fog = false
+  shipGroup.add(exhaust2.mesh)    
+
+  exhaust3.addEmitter(
+    new SPE.Emitter({
+      maxAge: {
+        value: 0.2
+      },
+      position: {
+        value: new THREE.Vector3(0, 0, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      acceleration: {
+        value: new THREE.Vector3(0, .5, 0),
+        spread: new THREE.Vector3(0, .25, 0)
+      },
+      velocity: {
+        value: new THREE.Vector3(0, .25, 0),
+        spread: new THREE.Vector3(0, .5, 0)
+      },
+      color: {
+        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
+      },
+      size: {
+        value: 2
+      },
+      particleCount: 20
+    })
+  )
+  exhaust3.mesh.position.z = 4
+  exhaust3.mesh.position.x = -.75
+  exhaust3.mesh.rotation.x = Math.PI / 2
+  exhaust3.material.fog = false
+  shipGroup.add(exhaust3.mesh)
+
+  setTimeout(() => {
+    splineCamera.position.x = -15
+    rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(0, 1, 0), Math.PI / 2, true, true)
+    rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(1, 0, 0), -.3, true, true)   
+  }, 0)
 }
 
 function addPlanets() { 
   planetArr.forEach(object => {
-    // Dummy Planet
-    // let mesh = new THREE.Mesh(
-    //   new THREE.SphereGeometry(20, 16, 16, 0, Math.PI * 2, 0, Math.PI * 2),
-    //   new THREE.MeshPhongMaterial({ color: 0x00ff00 })
-    // )
-    // mesh.position.copy(object.pos)
-    // scene.add(mesh)
-
     // Planet and clouds
     let planet = object.planet
     , planetGroup = new THREE.Object3D()
-    , pl_geo = new THREE.SphereGeometry(20, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2)
-    , diffuse = new THREE.TextureLoader().load(object.path + planet.diffuse.v)
-    , bump = planet.bump ? new THREE.TextureLoader().load(object.path + planet.bump.v) : null
-    , specular = planet.specular ? new THREE.TextureLoader().load(object.path + planet.specular.v) : null    
-    , clouds = new THREE.TextureLoader().load(object.path + planet.clouds.v)
+    , pl_geo = new THREE.SphereGeometry(20, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2)    
     
-    setTexture(diffuse, planet, "diffuse")
-    setTexture(bump, planet, "bump")
-    setTexture(specular, planet, "specular")
-    setTexture(clouds, planet, "clouds")
+    planetGroup.name = "planet"
+    planetGroup.position.copy(object.pos)
+    object.planetGroup = planetGroup
+    scene.add(planetGroup)
+
+    // Using preloaded textures
+    setTexture(planet.diffuse.tex, planet, "diffuse")
+    setTexture(planet.bump.tex, planet, "bump")
+    setTexture(planet.clouds.tex, planet, "clouds")
 
     planetGroup.add(
       new THREE.Mesh(pl_geo, new THREE.MeshPhongMaterial({ 
-        color: 0xffffff, map: diffuse,
-        specularMap: specular, bumpMap: bump, bumpScale: .5,
+        color: 0xffffff, map: planet.diffuse.tex, bumpMap: planet.bump.tex, bumpScale: .5,
       })
     ))
 
@@ -599,16 +552,12 @@ function addPlanets() {
         side: THREE.FrontSide,
         transparent: true,
         opacity: planet.clouds.opacity,
-        map: clouds,
-        alphaMap: clouds,
+        map: planet.clouds.tex,
+        alphaMap: planet.clouds.tex,
       })
     )
     cloudMesh.scale.multiplyScalar(1.02)
     planetGroup.add(cloudMesh)
-
-    planetGroup.position.copy(object.pos)
-    object.planetGroup = planetGroup
-    scene.add(planetGroup)
 
     // Moons / Rings
     if (object.moon) {
@@ -623,8 +572,8 @@ function addPlanets() {
         new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2), 
         new THREE.MeshPhongMaterial({
           color: 0xffffff,
-          map: moonDiffuse,
-          bumpMap: moonBump,
+          map: moon.diffuse.tex,
+          bumpMap: moon.bump.tex,
           bumpScale: .1,
         })
       )
@@ -634,8 +583,6 @@ function addPlanets() {
     }
     if (object.rings) {
       let rings = object.rings
-      , ringsDiffuse = new THREE.TextureLoader().load(object.path + rings.diffuse.v)      
-      , ringsAlpha = rings.alpha ? new THREE.TextureLoader().load(object.path + rings.alpha.v) : null      
       , thetaSegments = 50
       , phiSegments = 2
 
@@ -644,10 +591,10 @@ function addPlanets() {
         new THREE.RingGeometry(0, 60, thetaSegments, phiSegments),
         new THREE.MeshPhongMaterial({
           color: 0xffffff,
-          map: ringsDiffuse,
+          map: rings.diffuse.tex,
           transparent: true,
           opacity: 1,
-          alphaMap: ringsAlpha,
+          alphaMap: rings.alpha.tex,
           side: THREE.DoubleSide
         })
       )
@@ -672,7 +619,7 @@ function addPlanets() {
     line.lineLength = 0
     object.line = line
     scene.add(line)
-  }) 
+  })
 }
 
 function addPath() {
@@ -739,7 +686,7 @@ function addStars() {
   scene.add(starField)
 }
 
-function lookAtShip () {
+function lookAtShip() {
   splineCameraTarget = null
   // l(splineCameraTarget, parent)
   lookAtObj.copy(closest.planetGroup.position)
@@ -760,7 +707,10 @@ function lookAtShip () {
   })
 
   new TimelineMax({
-    onComplete: function () { splineCameraTarget = parent }
+    onComplete: function () { 
+      splineCameraTarget = parent
+      isExecuted = false
+    }
   })
   .add(lookAtTween, "lb0")
   .to(angle, .6, {
@@ -794,7 +744,10 @@ function lookAtPlanet() {
   })
 
   new TimelineMax({
-    onComplete: function () { splineCameraTarget = closest.planetGroup }
+    onComplete: function () { 
+      splineCameraTarget = closest.planetGroup
+      isExecuted = false
+    }
   })
   .to(angle, 1, {
     from: closest.side === "left" ? Math.PI : 0,
@@ -812,6 +765,70 @@ function lookAtPlanet() {
     fov: 45,
     onUpdate: function () { this.target.updateProjectionMatrix() }    
   }, "lb0")
+}
+
+function rotateCameraAboutPoint(obj, point, axis, theta, pointIsWorld, lookAt) {
+  // obj - your object (THREE.Object3D or derived)
+  // point - the point of rotation (THREE.Vector3)
+  // axis - the axis of rotation (normalized THREE.Vector3)
+  // theta - radian value of rotation
+  // pointIsWorld - boolean indicating the point is in world coordinates (default = false)
+  pointIsWorld = !!pointIsWorld
+
+  if (pointIsWorld) {
+    obj.parent.localToWorld(obj.position); // compensate for world coordinate
+  }
+
+  obj.position.sub(point); // remove the offset
+  obj.position.applyAxisAngle(axis, theta); // rotate the POSITION
+  obj.position.add(point); // re-add the offset
+
+  if (pointIsWorld) {
+    obj.parent.worldToLocal(obj.position); // undo world coordinates compensation
+  }
+
+  obj.rotateOnAxis(axis, theta); // rotate the OBJECT
+  if (lookAt) obj.lookAt(point)
+}
+
+function getDistance(from, to) {
+  let x0 = from.x, y0 = from.y, z0 = from.z
+    , x1 = to.x, y1 = to.y, z1 = to.z
+
+  return Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2) + Math.pow(z1 - z0, 2))
+}
+
+function createMultiMaterialObject(geometry, materials) {
+  let group = new THREE.Group()
+  materials.forEach(material => group.add(new THREE.Mesh(geometry, material)))
+  return group
+}
+
+function setTexture(tex, pl, type) {
+  if (tex) {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.copy(pl[type].repeat)
+    tex.minFilter = THREE.NearestFilter
+  }
+}
+
+function showHelpers() {
+  scene.add(plane)
+  scene.add(splineCameraHelper)
+  scene.add(axesHelper)
+  scene.add(spotLightMesh)
+  scene.add(spotLightMesh2)
+  // Wireframe sphere to visualize parent
+  parent.add(parentWireMesh)
+}
+
+function hideHelpers() {
+  scene.remove(plane)
+  scene.remove(splineCameraHelper)
+  scene.remove(axesHelper)
+  scene.remove(spotLightMesh)
+  scene.remove(spotLightMesh2)
+  parent.remove(parentWireMesh)
 }
 
 function animatePlanets() {
@@ -846,13 +863,21 @@ function findNearest() {
     l("Closest:", closest.name)
   }
 
-  if (closest.line.lineLength < 100){
-    // l("Focus on:", closest.name)
-    // Animate from current lookAt to planet
+  if (closest.line.lineLength < 100){ // Ship within 100 units of planet
+    if (!isExecuted && splineCameraTarget.name === "ship"){
+      // l("Focus on:", closest.name)
+      // Animate from current lookAt to planet
+      lookAtPlanet()
+      isExecuted = true
+    }
     // splineCameraTarget = closest.planetGroup
-  } else{
-    // l("Focus on ship")
-    // Animate from current lookAt to ship
+  } else if (closest.line.lineLength > 100){ // Ship more than 100 units of planet
+    if (!isExecuted && splineCameraTarget.name === "planet") {
+      // l("Focus on ship")
+      // Animate from current lookAt to ship
+      lookAtShip()
+      isExecuted = true
+    }
     // splineCameraTarget = parent
   }
 }
@@ -883,23 +908,28 @@ function renderFollowCamera() {
 }
 
 function render() {
-  params.followCam && renderFollowCamera()
-  findNearest()
-  animatePlanets()
-  exhaust.tick(0.005)
-  exhaust2.tick(0.005)
-  exhaust3.tick(0.005)
-
-  renderer.render(scene, currCam)
+  try{
+    if (params.followCam){
+      renderFollowCamera()
+      findNearest()
+    }
+    animatePlanets()
+    exhaust.tick(0.005)
+    exhaust2.tick(0.005)
+    exhaust3.tick(0.005)
+    renderer.render(scene, currCam)
+  } catch (err){
+    l(err)
+    TweenLite.ticker.removeEventListener("tick", render)
+  }
 }
 
-function animate() {
-  render()
-  requestAnimationFrame(animate)
+function addListeners(){
+  TweenLite.ticker.addEventListener("tick", render)
+  window.addEventListener("resize", resize, false)
 }
 
-// Resize Three.js scene on window resize
-function onWindowResize() {
+function resize() {
   w = ctn.clientWidth
   h = ctn.clientHeight
   camera.aspect = w / h
@@ -911,11 +941,87 @@ function onWindowResize() {
   renderer.setSize(w, h)
 }
 
-init()
+function preload(){
+  manager.onStart = function () {
+    $("#html-ctn").append(Sqrl.Render(template, options))
+    // TweenMax.to($(".ctn-info")[0], 1, { left: 10, ease: Back.easeOut })
+    var listener = new THREE.AudioListener()
+    camera.add(listener)
 
-// Either of the below must be used. If using GSAP, use 2nd
-// animate()
-TweenLite.ticker.addEventListener("tick", render)
+    // create a global audio source
+    var sound = new THREE.Audio(listener)
+    var audioLoader = new THREE.AudioLoader()
+    audioLoader.load('assets/Star_Wars_original_opening_crawl_1977.mp3', function (buffer) {
+      l("Sound done")
+      sound.setBuffer(buffer)
+      // sound.setLoop(true);
+      // sound.setVolume(0.5);
+      // sound.play()      
+      intro.beginAnimation()
+    });
+    
+  }
 
-// Listen for resizing of window
-window.addEventListener("resize", onWindowResize, false)
+  manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    l(Math.round(itemsLoaded / itemsTotal * 100) + ' %')
+  }
+
+  manager.onError = function (url) {
+    l('There was an error loading ' + url)
+  }
+
+  manager.onLoad = function () {
+    // l(planetArr)
+    l('Loading complete!')
+    // init() // -> Everything begins from here
+  }
+  
+  // Planet assets
+  planetArr.forEach(pl => {
+    loaders.texture.load(pl.path + pl.planet.diffuse.v, tex => {
+      tex.name = pl.name + " diffuse texture"
+      pl.planet.diffuse.tex = tex
+    })
+    
+    loaders.texture.load(pl.path + pl.planet.bump.v, tex => {
+      tex.name = pl.name + " bump texture"
+      pl.planet.bump.tex = tex
+    })
+    
+    loaders.texture.load(pl.path + pl.planet.clouds.v, tex => {
+      tex.name = pl.name + " clouds texture"
+      pl.planet.clouds.tex = tex
+    })
+
+    if(pl.moon){
+      loaders.texture.load(pl.path + pl.moon.diffuse.v, tex => {
+        tex.name = pl.name + " moon diffuse texture"
+        pl.moon.diffuse.tex = tex
+      })
+      
+      loaders.texture.load(pl.path + pl.moon.bump.v, tex => {
+        tex.name = pl.name + " moon bump texture"
+        pl.moon.bump.tex = tex
+      })
+    }
+    
+    if(pl.rings){
+      loaders.texture.load(pl.path + pl.rings.diffuse.v, tex => {
+        tex.name = pl.name + " rings diffuse texture"
+        pl.rings.diffuse.tex = tex
+      })
+      
+      loaders.texture.load(pl.path + pl.rings.alpha.v, tex => {
+        tex.name = pl.name + " rings alpha texture"
+        pl.rings.alpha.tex = tex
+      })
+    }
+  })
+
+  // Ship assets
+  loaders.gltf.load('assets/star-destroyer/scene.gltf', gltf => { ship = gltf.scene.children[0] })
+  loaders.texture.load('assets/smokeparticle.png', tex => { exhaustTex = tex })
+}
+
+preload()
+// init()

@@ -1,8 +1,204 @@
+@font-face {
+  font-family: 'dg';
+  src: url(../fonts/SfDistantGalaxy-0l3d.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'dg-o';
+  src: url(../fonts/SfDistantGalaxyOutline-xoeO.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'dg-s';
+  src: url(../fonts/SfDistantGalaxySymbols-aylE.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'sp-r';
+  src: url(../fonts/Sofia-Pro-Regular.ttf) format('truetype');
+}
 *{ margin: 0; padding: 0; }
 body{
+	background: #000;
 	overflow: hidden;
 }
-html, body, #three-ctn{
+html, body, #three-ctn, #html-ctn{
 	height: 100%;
 	width: 100%;
+}
+.dg.ac{ z-index: 1; }
+
+#html-ctn{
+	position: absolute;
+	top: 0; left: 0;
+	z-index: 1;
+	opacity: .8;
+	color: #fff;
+}
+.ctn-info{	
+	position: absolute;
+	bottom: 10px;
+	left: -50vw;
+	display: inline-block;
+	width: 50vw;
+	padding: 1rem;
+	box-sizing: border-box;
+	background: #000;
+	background-clip: padding-box;	
+	border: 5px solid transparent;
+	border-radius: 1em;
+}
+.ctn-info:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  margin: -5px;
+  border-radius: inherit;
+  background: linear-gradient(to right, rgb(0, 255, 115), rgb(0, 153, 255));
+}
+.ctn-info .heading{
+	width: 100%;	
+	display: flex;
+	justify-content: space-between;
+}
+.ctn-info .title{
+	font-family: 'dg';
+	font-size: 3.5rem;	
+}
+.ctn-info .symbol{
+	font-family: 'dg-s';	
+}
+.ctn-info .sub-title-1{
+	display: block;
+	font-family: 'dg';
+	font-size: 2rem;
+	margin-top: .5rem;	
+}
+.ctn-info .sub-title-2{
+	display: inline-block;
+	vertical-align: top;
+	font-family: 'dg-o';
+	font-size: 2rem;	
+	margin-top: .5rem;
+}
+.ctn-info img{
+	height: 140px;
+	border-radius: 50%;	
+}
+
+.ctn-info .about{
+	font-family: 'sp-r';
+}
+
+/* Star Wars */
+.starwars section {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  z-index: 1;
+}
+.starwars .logo {
+  opacity: 0;
+  -webkit-animation: logo 4s ease-out 1s;
+          animation: logo 4s ease-out 1s;
+}
+.starwars .logo svg {
+  width: inherit;
+}
+.starwars .titles {
+  width: 14.65em;
+  margin: 0 0 0 -7.325em;
+  top: auto;
+  bottom: 0;
+  height: 50em;
+  font-size: 350%;
+  text-align: justify;
+  overflow: hidden;
+  -webkit-transform-origin: 50% 100%;
+          transform-origin: 50% 100%;
+  -webkit-transform: perspective(300px) rotateX(25deg);
+  transform: perspective(300px) rotateX(25deg);
+}
+.starwars .titles > div {
+  position: absolute;
+  top: 100%;
+  -webkit-animation: titles 50s linear 0s;
+          animation: titles 50s linear 0s;
+}
+.starwars .titles > div > p {
+  margin: 1.35em 0 1.85em 0;
+  line-height: 1.35em;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@-webkit-keyframes logo {
+  0% {
+    width: 18em;
+    margin: -9em 0 0 -9em;
+    -webkit-transform: scale(2.75);
+    transform: scale(2.75);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+    width: 18em;
+    margin: -9em 0 0 -9em;
+  }
+  100% {
+    -webkit-transform: scale(0.1);
+    transform: scale(0.1);
+    opacity: 0;
+    width: 18em;
+    margin: -9em 0 0 -9em;
+  }
+}
+@keyframes logo {
+  0% {
+    width: 18em;
+    margin: -9em 0 0 -9em;
+    -webkit-transform: scale(2.75);
+    transform: scale(2.75);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+    width: 18em;
+    margin: -9em 0 0 -9em;
+  }
+  100% {
+    -webkit-transform: scale(0.1);
+    transform: scale(0.1);
+    opacity: 0;
+    width: 18em;
+    margin: -9em 0 0 -9em;
+  }
+}
+
+@-webkit-keyframes titles {
+  0% {
+    top: 100%;
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    top: 20%;
+    opacity: 0;
+  }
+}
+@keyframes titles {
+  0% {
+    top: 100%;
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    top: 20%;
+    opacity: 0;
+  }
 }
