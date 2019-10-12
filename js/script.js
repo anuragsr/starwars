@@ -31,34 +31,10 @@ const wc = window.console
     , getState: function () { l(this) }
   }
 }
-, StarWars = function(args) {
-  // Context wrapper
-  this.el = $(args.el)
-
-  // Audio to play the opening crawl
-  // this.audio = this.el.find('audio').get(0)
-
-  // The animation wrapper
-  this.animation = this.el.find('.animation')
-  this.cloned = this.animation.clone(true)
-  this.animation.remove()
-  // this.reset = function () {
-  //   this.cloned = this.animation.clone(true)
-  //   this.animation.remove()
-  //   this.animation = this.cloned
-  // }
-
-  // Remove animation and shows the start screen
-  // this.reset()
-
-  this.beginAnimation = function () {
-    this.el.append(this.cloned)
-  }
-}
 
 let ctn = $("#three-ctn")
-  , w = ctn.clientWidth
-  , h = ctn.clientHeight
+  , w = ctn.width()
+  , h = ctn.height()
   , renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   , scene = new THREE.Scene()
   , camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000)
@@ -322,7 +298,6 @@ let ctn = $("#three-ctn")
   , isExecuted = false
   , template = $("#tpl").text()
   , options = { planetArr }
-  , intro = new StarWars({ el: '.starwars' })
 ; 
 
 function init() {
@@ -341,7 +316,7 @@ function initScene() {
   renderer.setSize(w, h)
   $(renderer.domElement).css({
     position: "absolute",
-    top: 0, left: 0    
+    top: 0, left: 0
   })
   ctn.append(renderer.domElement)
 
@@ -681,7 +656,7 @@ function addStars() {
     starsGeometry.vertices.push(star)
   }
   starField = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ 
-    color: 0xffffff, fog: false 
+    color: 0xffffff, fog: false, map: exhaustTex
   }))
   scene.add(starField)
 }
@@ -930,8 +905,8 @@ function addListeners(){
 }
 
 function resize() {
-  w = ctn.clientWidth
-  h = ctn.clientHeight
+  w = ctn.width()
+  h = ctn.height()
   camera.aspect = w / h
   camera.updateProjectionMatrix()
 
@@ -944,22 +919,7 @@ function resize() {
 function preload(){
   manager.onStart = function () {
     $("#html-ctn").append(Sqrl.Render(template, options))
-    // TweenMax.to($(".ctn-info")[0], 1, { left: 10, ease: Back.easeOut })
-    var listener = new THREE.AudioListener()
-    camera.add(listener)
-
-    // create a global audio source
-    var sound = new THREE.Audio(listener)
-    var audioLoader = new THREE.AudioLoader()
-    audioLoader.load('assets/Star_Wars_original_opening_crawl_1977.mp3', function (buffer) {
-      l("Sound done")
-      sound.setBuffer(buffer)
-      // sound.setLoop(true);
-      // sound.setVolume(0.5);
-      // sound.play()      
-      intro.beginAnimation()
-    });
-    
+    // TweenMax.to($(".ctn-info")[0], 1, { left: 10, ease: Back.easeOut })    
   }
 
   manager.onProgress = function (url, itemsLoaded, itemsTotal) {
@@ -973,7 +933,7 @@ function preload(){
   manager.onLoad = function () {
     // l(planetArr)
     l('Loading complete!')
-    // init() // -> Everything begins from here
+    init() // -> Everything begins from here
   }
   
   // Planet assets
@@ -1023,5 +983,29 @@ function preload(){
   loaders.texture.load('assets/smokeparticle.png', tex => { exhaustTex = tex })
 }
 
-preload()
-// init()
+$(function(){  
+  // preload()
+  // init()
+
+  let animation = $(".animation")
+  , cloned = animation.clone(true)
+  , sound = new Howl({ src: ['assets/intro.mp3'], html5: true })
+
+  animation.remove()
+  $("#start").on("click", function () {
+    $("#start").fadeOut()
+    cloned.css({ opacity: 1 })
+    $(".starwars").append(cloned)
+    sound.play()
+    preload()
+    setTimeout(function(){
+      l("Can skip")
+      sound.stop()
+      $(".start-ctn").fadeOut(function(){
+        $("#html-ctn").css({
+          height: 0, width: 0,
+        })
+      })
+    }, 50000)
+  })
+})    

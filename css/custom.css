@@ -1,3 +1,4 @@
+@import url(https://fonts.googleapis.com/css?family=News+Cycle:400,700);
 @font-face {
   font-family: 'dg';
   src: url(../fonts/SfDistantGalaxy-0l3d.ttf) format('truetype');
@@ -19,7 +20,9 @@ body{
 	background: #000;
 	overflow: hidden;
 }
-html, body, #three-ctn, #html-ctn{
+html, body, #three-ctn, #html-ctn, 
+.start-ctn, .stars, .twinkling, 
+.starwars{
 	height: 100%;
 	width: 100%;
 }
@@ -29,7 +32,7 @@ html, body, #three-ctn, #html-ctn{
 	position: absolute;
 	top: 0; left: 0;
 	z-index: 1;
-	opacity: .8;
+	/* opacity: .8; */
 	color: #fff;
 }
 .ctn-info{	
@@ -66,7 +69,7 @@ html, body, #three-ctn, #html-ctn{
 	font-family: 'dg';
 	font-size: 3.5rem;	
 }
-.ctn-info .symbol{
+.symbol{
 	font-family: 'dg-s';	
 }
 .ctn-info .sub-title-1{
@@ -92,6 +95,45 @@ html, body, #three-ctn, #html-ctn{
 }
 
 /* Star Wars */
+.start-ctn{
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+}
+.start-ctn .symbol{
+	font-size: 3.1rem;
+}
+a#start{
+	font-size: 4rem;
+	font-family: "dg-o";
+	color: #ff6;
+	text-decoration: none;
+	position: relative;
+	z-index: 3;
+}
+.stars, .twinkling{
+	position: absolute;
+	top: 0; left: 0;
+}
+.stars {
+  background:#000 url(../assets/stars.png) repeat top center;
+  z-index:0;
+}
+.twinkling{
+  background:transparent url(../assets/twinkling.png) repeat top center;
+  z-index:1;
+  -webkit-animation:move-twink-back 200s linear infinite;
+  animation:move-twink-back 200s linear infinite;
+}
+
+.starwars{ 
+	position: absolute;
+	z-index: 2;
+}
+.starwars .animation{
+	opacity: 0;
+}
 .starwars section {
   position: absolute;
   top: 45%;
@@ -107,24 +149,26 @@ html, body, #three-ctn, #html-ctn{
   width: inherit;
 }
 .starwars .titles {
+	color: #ff6;
+	font-family: "News Cycle";
   width: 14.65em;
   margin: 0 0 0 -7.325em;
   top: auto;
   bottom: 0;
   height: 50em;
-  font-size: 350%;
+  font-size: 5rem;
   text-align: justify;
   overflow: hidden;
   -webkit-transform-origin: 50% 100%;
           transform-origin: 50% 100%;
-  -webkit-transform: perspective(300px) rotateX(25deg);
-  transform: perspective(300px) rotateX(25deg);
+  -webkit-transform: perspective(300px) rotateX(15deg);
+  transform: perspective(300px) rotateX(15deg);
 }
 .starwars .titles > div {
   position: absolute;
   top: 100%;
-  -webkit-animation: titles 50s linear 0s;
-          animation: titles 50s linear 0s;
+  -webkit-animation: titles 50s linear 1s;
+          animation: titles 50s linear 1s;
 }
 .starwars .titles > div > p {
   margin: 1.35em 0 1.85em 0;
@@ -201,4 +245,13 @@ html, body, #three-ctn, #html-ctn{
     top: 20%;
     opacity: 0;
   }
+}
+
+@-webkit-keyframes move-twink-back {
+	from {background-position:0 0;}
+	to {background-position:-10000px 5000px;}
+}
+@keyframes move-twink-back {
+	from {background-position:0 0;}
+	to {background-position:-10000px 5000px;}
 }
