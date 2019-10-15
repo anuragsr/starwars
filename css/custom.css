@@ -32,33 +32,24 @@ html, body, #three-ctn, #html-ctn,
 	position: absolute;
 	top: 0; left: 0;
 	z-index: 1;
-	/* opacity: .8; */
+	opacity: 1;
 	color: #fff;
 }
-.ctn-info{	
+.ctn-info{
 	position: absolute;
 	bottom: 10px;
-	left: -50vw;
-	display: inline-block;
+	left: -50vw;	
 	width: 50vw;
-	padding: 1rem;
+	padding: .5rem;
 	box-sizing: border-box;
-	background: #000;
-	background-clip: padding-box;	
-	border: 5px solid transparent;
-	border-radius: 1em;
-}
-.ctn-info:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: -1;
-  margin: -5px;
-  border-radius: inherit;
+  border-radius: .75rem;
   background: linear-gradient(to right, rgb(0, 255, 115), rgb(0, 153, 255));
+  z-index: 1;
+}
+.ctn-info-inner{
+  background: #000;
+  border-radius: .75rem;
+	padding: 1rem;
 }
 .ctn-info .heading{
 	width: 100%;	
@@ -104,7 +95,21 @@ html, body, #three-ctn, #html-ctn,
 .start-ctn .symbol{
 	font-size: 3.1rem;
 }
-a#start{
+.bar{
+  height: 10px;
+  width: 100%;
+  position: absolute;
+  z-index: 3;
+  top: 0; left: 0;  
+}
+.bar-inner{
+  background: #ff6;
+  height: 100%;
+  width: 0%;
+  transition: width .5s ease-out;
+}
+#start, #skip, #loading{
+  cursor: pointer;
 	font-size: 4rem;
 	font-family: "dg-o";
 	color: #ff6;
@@ -112,6 +117,23 @@ a#start{
 	position: relative;
 	z-index: 3;
 }
+#skip .symbol,
+#loading .symbol{
+	font-size: 1.25rem;
+}
+#skip, #loading{  
+  position: absolute;
+	font-size: 1.75rem;
+}
+#skip{  
+  top: 20px;
+  right: 20px;
+}
+#loading{
+  top: 20px;
+  left: 20px;
+}
+
 .stars, .twinkling{
 	position: absolute;
 	top: 0; left: 0;

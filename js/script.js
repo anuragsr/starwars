@@ -298,6 +298,7 @@ let ctn = $("#three-ctn")
   , isExecuted = false
   , template = $("#tpl").text()
   , options = { planetArr }
+  , sound = new Howl({ src: ['assets/intro.mp3'], html5: true })
 ; 
 
 function init() {
@@ -495,7 +496,7 @@ function addShip() {
     splineCamera.position.x = -15
     rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(0, 1, 0), Math.PI / 2, true, true)
     rotateCameraAboutPoint(splineCamera, parent.position, new THREE.Vector3(1, 0, 0), -.3, true, true)   
-  }, 0)
+  }, 50)
 }
 
 function addPlanets() { 
@@ -919,20 +920,24 @@ function resize() {
 function preload(){
   manager.onStart = function () {
     $("#html-ctn").append(Sqrl.Render(template, options))
-    // TweenMax.to($(".ctn-info")[0], 1, { left: 10, ease: Back.easeOut })    
+    // TweenMax.to($(".ctn-info")[3], 1, { left: 10, ease: Back.easeOut })    
   }
 
-  manager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    l(Math.round(itemsLoaded / itemsTotal * 100) + ' %')
+  manager.onProgress = (url, itemsLoaded, itemsTotal) => {
+    let perc = Math.round(itemsLoaded / itemsTotal * 100) + '%'
+    l(perc)
+    $(".bar-inner").css({ width: perc })
   }
 
-  manager.onError = function (url) {
+  manager.onError = url => {
     l('There was an error loading ' + url)
   }
 
-  manager.onLoad = function () {
+  manager.onLoad = () => {
     // l(planetArr)
     l('Loading complete!')
+    $("#skip").fadeIn()
+    $("#loading").fadeOut()
     init() // -> Everything begins from here
   }
   
@@ -983,29 +988,35 @@ function preload(){
   loaders.texture.load('assets/smokeparticle.png', tex => { exhaustTex = tex })
 }
 
+function beginJourney(){
+  sound.stop()
+  $(".start-ctn").fadeOut(() => {
+    $("#html-ctn").css({ height: 0, width: 0, })
+  })
+}
+
 $(function(){  
-  // preload()
+  preload()
   // init()
 
   let animation = $(".animation")
   , cloned = animation.clone(true)
-  , sound = new Howl({ src: ['assets/intro.mp3'], html5: true })
-
+  
+  $("#skip ").hide()
   animation.remove()
+
   $("#start").on("click", function () {
     $("#start").fadeOut()
     cloned.css({ opacity: 1 })
     $(".starwars").append(cloned)
     sound.play()
-    preload()
+    // preload()
+
     setTimeout(function(){
       l("Can skip")
-      sound.stop()
-      $(".start-ctn").fadeOut(function(){
-        $("#html-ctn").css({
-          height: 0, width: 0,
-        })
-      })
+      beginJourney()      
     }, 50000)
   })
+
+  $("#skip").on("click", beginJourney)
 })    

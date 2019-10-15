@@ -10,10 +10,18 @@
     <div id="three-ctn"></div>
     <div id="html-ctn">
       <div class="start-ctn">
-        <a href="javascript:void(0)" id="start">
-          Click to Start<br/>
-          <span class="symbol">Click to Start</span>
-        </a>
+        <div class="bar">
+          <div class="bar-inner"></div>
+        </div>
+        <div id="start">
+          Click to Start<br/><span class="symbol">Click to Start</span>
+        </div>
+        <div id="loading">
+          Loading<br/><span class="symbol">Loading</span>
+        </div>
+        <div id="skip">
+          Skip Intro<br/><span class="symbol">Skip Intro</span>
+        </div>
         <div class="starwars">
           <div class="animation">  
             <section class="logo">
@@ -165,17 +173,19 @@
     <script id="tpl" type="text/template">
       {{each(options.planetArr)}}
         {{js(@this.first = @this.name.slice(0, 1))/}}
+        <!-- Index: {{@index}}<br/> -->
         <div class="ctn-info">
-          <!-- Index: {{@index}}<br/> -->
-          <div class="heading">
-            <div class="title">
-              <span class="symbol">{{@this.first}}</span> {{@this.name}}
-              <span class="sub-title-1">{{@this.info.region}}</span>
-              <span class="sub-title-2">{{@this.info.sector}}, {{@this.info.system}}</span>
+          <div class="ctn-info-inner">            
+            <div class="heading">
+              <div class="title">
+                <span class="symbol">{{@this.first}}</span> {{@this.name}}
+                <span class="sub-title-1">{{@this.info.region}}</span>
+                <span class="sub-title-2">{{@this.info.sector}}, {{@this.info.system}}</span>
+              </div>
+              <img src="{{@this.path}}{{@this.name}}.jpg"/>
             </div>
-            <img src="{{@this.path}}{{@this.name}}.jpg"/>
+            <div class="about">{{@this.info.about}}</div>
           </div>
-          <div class="about">{{@this.info.about}}</div>
         </div>
       {{/each}}
     </script>
