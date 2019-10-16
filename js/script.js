@@ -298,7 +298,10 @@ let ctn = $("#three-ctn")
   , isExecuted = false
   , template = $("#tpl").text()
   , options = { planetArr }
-  , sound = new Howl({ src: ['assets/intro.mp3'], html5: true })
+  , introSound = new Howl({ src: ['assets/intro.mp3'], loop: true, html5: true })
+  , spaceSound = new Howl({ src: ['assets/space.mp3'], loop: true, html5: true })
+  , introSoundId
+  , spaceSoundId
 ; 
 
 function init() {
@@ -989,7 +992,9 @@ function preload(){
 }
 
 function beginJourney(){
-  sound.stop()
+  // introSound.stop()
+  introSound.fade(1, 0, 1000, introSoundId)
+  spaceSound.play()
   $(".start-ctn").fadeOut(() => {
     $("#html-ctn").css({ height: 0, width: 0, })
   })
@@ -1009,12 +1014,12 @@ $(function(){
     $("#start").fadeOut()
     cloned.css({ opacity: 1 })
     $(".starwars").append(cloned)
-    sound.play()
+    introSoundId = introSound.play()
     // preload()
 
     setTimeout(function(){
       l("Can skip")
-      beginJourney()      
+      // beginJourney()      
     }, 50000)
   })
 

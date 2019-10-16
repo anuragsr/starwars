@@ -133,7 +133,9 @@ html, body, #three-ctn, #html-ctn,
   top: 20px;
   left: 20px;
 }
-
+.sub{
+  font-size: 2rem;
+}
 .stars, .twinkling{
 	position: absolute;
 	top: 0; left: 0;
@@ -189,8 +191,8 @@ html, body, #three-ctn, #html-ctn,
 .starwars .titles > div {
   position: absolute;
   top: 100%;
-  -webkit-animation: titles 50s linear 1s;
-          animation: titles 50s linear 1s;
+  -webkit-animation: titles 50s linear 1s infinite;
+          animation: titles 50s linear 1s infinite;
 }
 .starwars .titles > div > p {
   margin: 1.35em 0 1.85em 0;
