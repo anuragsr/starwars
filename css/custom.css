@@ -18,7 +18,14 @@
 *{ margin: 0; padding: 0; }
 body{
 	background: #000;
-	overflow: hidden;
+  overflow: hidden;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Opera and Firefox */
 }
 html, body, #three-ctn, #html-ctn, 
 .start-ctn, .stars, .twinkling, 
@@ -37,9 +44,9 @@ html, body, #three-ctn, #html-ctn,
 }
 .ctn-info{
 	position: absolute;
-	bottom: 10px;
-	left: -50vw;	
-	width: 50vw;
+	top: 20px;
+	left: -35vw;	
+	width: 35vw;
 	padding: .5rem;
 	box-sizing: border-box;
   border-radius: .75rem;
@@ -74,7 +81,8 @@ html, body, #three-ctn, #html-ctn,
 	vertical-align: top;
 	font-family: 'dg-o';
 	font-size: 2rem;	
-	margin-top: .5rem;
+  margin-top: .5rem;
+  margin-bottom: 1rem;
 }
 .ctn-info img{
 	height: 140px;
@@ -117,21 +125,16 @@ html, body, #three-ctn, #html-ctn,
 	position: relative;
 	z-index: 3;
 }
-#skip .symbol,
-#loading .symbol{
+#skip .symbol{
 	font-size: 1.25rem;
 }
-#skip, #loading{  
+#skip{  
   position: absolute;
 	font-size: 1.75rem;
 }
 #skip{  
   top: 20px;
   right: 20px;
-}
-#loading{
-  top: 20px;
-  left: 20px;
 }
 .sub{
   font-size: 2rem;
@@ -200,6 +203,39 @@ html, body, #three-ctn, #html-ctn,
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
+
+.last-msg{
+  z-index: 3;
+  text-align: center;
+  width: 50vw;
+  left: unset;
+  transform: translate(50%, 100px);
+  display: none;
+}
+.last-msg .title{
+  font-size: 2.5vw;
+  font-family: 'dg-o';
+}
+.last-msg a{
+  color: orange;
+  text-decoration: none;
+}
+.last-msg a:hover{
+  font-family: 'dg';
+}
+.last-msg button{
+  font-family: 'dg';
+  background: none;
+  border: 5px solid orange;
+  border-radius: .75rem;
+  padding: 20px;
+  font-size: 2rem;
+  color: #fff;
+}
+.last-msg button:hover{
+   background: orange;
+   cursor: pointer;
+ }
 
 @-webkit-keyframes logo {
   0% {

@@ -14,11 +14,11 @@
           <div class="bar-inner"></div>
         </div>
         <div id="start">
-          Click to Start<br/><span class="symbol">Click to Start</span><br/>
-          <span class="sub">Please turn on sound for full effect</span>
+          Click to Start<br/><span class="symbol">Click to Start</span>
+          <br/><span class="sub">Please turn on the sound for full effect</span>
         </div>
         <div id="loading">
-          Loading<br/><span class="symbol">Loading</span>
+          Loading...<br/><span class="symbol">Loading</span>
         </div>
         <div id="skip">
           Skip Intro<br/><span class="symbol">Skip Intro</span>
@@ -170,18 +170,35 @@
         <div class="stars"></div>
         <div class="twinkling"></div>
       </div>
+      <div class="ctn-info last-msg">
+        <div class="ctn-info-inner">
+          <div class="heading">
+            <div class="title">
+              Hope you enjoyed your peek into the StarWars universe.<br />
+              May the force be with you<br /><br />
+              <span class="sub-title-2">
+                Check out my other <a target="_blank" href="http://envisagecyberart.in/threejs-experiments">3D projects</a>
+              </span>
+              <span class="sub-title-2">
+                Or visit my <a target="_blank" href="http://envisagecyberart.in/">website</a>
+              </span>
+            </div>
+          </div>
+          <br/><button id="replay">Replay</button>
+        </div>
+      </div>
     </div>
     <script id="tpl" type="text/template">
       {{each(options.planetArr)}}
         {{js(@this.first = @this.name.slice(0, 1))/}}
         <!-- Index: {{@index}}<br/> -->
-        <div class="ctn-info">
+        <div class="ctn-info ctn-info-pl">
           <div class="ctn-info-inner">            
             <div class="heading">
               <div class="title">
                 <span class="symbol">{{@this.first}}</span> {{@this.name}}
                 <span class="sub-title-1">{{@this.info.region}}</span>
-                <span class="sub-title-2">{{@this.info.sector}}, {{@this.info.system}}</span>
+                <span class="sub-title-2">{{@this.info.sector}}<br/>{{@this.info.system}}</span>
               </div>
               <img src="{{@this.path}}{{@this.name}}.jpg"/>
             </div>

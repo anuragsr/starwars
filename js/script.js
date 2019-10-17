@@ -3,9 +3,9 @@ const wc = window.console
 , cl = console.clear.bind(wc)
 , Params = function () {
   return {
-    shipSpeed: 0.0001
-    , tubeOpacity: .2
-    , showFog: false
+    shipSpeed: 0.0002
+    , tubeOpacity: 0
+    , showFog: true
     , fogDistance: 400
     , helpers: false
     , followCam: false
@@ -80,6 +80,7 @@ let ctn = $("#three-ctn")
   , ship
   , shipGroup = new THREE.Group()
   , exhaust, exhaust2, exhaust3
+  , exhaustTex
   , planetArr = [
     {
       name: 'endor',
@@ -247,6 +248,10 @@ let ctn = $("#three-ctn")
         bump: { v: 'bump.jpg', repeat: new THREE.Vector2(3, 3) },
         clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: .7 },
       },
+      moon: {
+        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
+        bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
+      },
       info: {
         region: "Outer Rim Territories",
         sector: "Gordian Reach",
@@ -266,10 +271,6 @@ let ctn = $("#three-ctn")
         diffuse: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },
         bump: { v: 'diffuse.jpg', repeat: new THREE.Vector2(3, 3) },  
         clouds: { v: 'clouds.jpg', repeat: new THREE.Vector2(2, 2), opacity: 1 },
-      },
-      moon: {
-        diffuse: { v: 'moon.jpg', repeat: new THREE.Vector2(2, 2) },
-        bump: { v: 'moonbump.jpg', repeat: new THREE.Vector2(2, 2) },
       },
       info: {
         region: "Outer Rim Territories",
@@ -296,17 +297,18 @@ let ctn = $("#three-ctn")
   , fog = new THREE.Fog(0x000000, 1, params.fogDistance)
   , splineCameraTarget = parent
   , isExecuted = false
-  , template = $("#tpl").text()
-  , options = { planetArr }
   , introSound = new Howl({ src: ['assets/intro.mp3'], loop: true, html5: true })
-  , spaceSound = new Howl({ src: ['assets/space.mp3'], loop: true, html5: true })
   , introSoundId
-  , spaceSoundId
+  , spaceSound = new Howl({ src: ['assets/space.mp3'], loop: true, html5: true })
+  , entrySound = new Howl({ src: ['assets/entry.mp3'] })
+  , exitSound = new Howl({ src: ['assets/exit.mp3'] })
+  , initInterval
+  , preloaded = false
 ; 
 
 function init() {
   initScene()
-  initGUI()
+  // initGUI()
   addShip()
   addPlanets()
   addPath()
@@ -503,12 +505,13 @@ function addShip() {
 }
 
 function addPlanets() { 
-  planetArr.forEach(object => {
+  planetArr.forEach((object, idx) => {
     // Planet and clouds
     let planet = object.planet
     , planetGroup = new THREE.Object3D()
     , pl_geo = new THREE.SphereGeometry(20, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2)    
     
+    planetGroup.idx = idx
     planetGroup.name = "planet"
     planetGroup.position.copy(object.pos)
     object.planetGroup = planetGroup
@@ -660,12 +663,14 @@ function addStars() {
     starsGeometry.vertices.push(star)
   }
   starField = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ 
-    color: 0xffffff, fog: false, map: exhaustTex
+    color: 0xffffff, fog: false,    
+    size: 5, sizeAttenuation: false, 
+    map: starTex, alphaTest: 0.5, transparent: true
   }))
   scene.add(starField)
 }
 
-function lookAtShip() {
+function lookAtShip() {  
   splineCameraTarget = null
   // l(splineCameraTarget, parent)
   lookAtObj.copy(closest.planetGroup.position)
@@ -689,6 +694,10 @@ function lookAtShip() {
     onComplete: function () { 
       splineCameraTarget = parent
       isExecuted = false
+
+      params.shipSpeed = 0.0002
+      TweenMax.to($(".ctn-info-pl")[closest.planetGroup.idx], 2, { left: "-35vw", ease: Back.easeIn })
+      exitSound.play()
     }
   })
   .add(lookAtTween, "lb0")
@@ -710,6 +719,10 @@ function lookAtShip() {
 }
 
 function lookAtPlanet() {
+  params.shipSpeed = 0.00005
+  TweenMax.to($(".ctn-info-pl")[closest.planetGroup.idx], 3, { left: 20, ease: Back.easeOut })    
+  entrySound.play()
+
   splineCameraTarget = null
   // l(splineCameraTarget, closest)
   lookAtObj.copy(parent.position)
@@ -726,6 +739,16 @@ function lookAtPlanet() {
     onComplete: function () { 
       splineCameraTarget = closest.planetGroup
       isExecuted = false
+      
+      if (closest.planetGroup.idx === planetArr.length - 1){
+        l("last planet")
+        params.shipSpeed = 0
+        setTimeout(() => {
+          TweenMax.to($(".ctn-info-pl")[closest.planetGroup.idx], 1, { left: "-35vw", ease: Back.easeIn })
+          exitSound.play()
+          $(".last-msg").fadeIn(2000)
+        }, 10000)
+      }
     }
   })
   .to(angle, 1, {
@@ -921,9 +944,8 @@ function resize() {
 }
 
 function preload(){
-  manager.onStart = function () {
-    $("#html-ctn").append(Sqrl.Render(template, options))
-    // TweenMax.to($(".ctn-info")[3], 1, { left: 10, ease: Back.easeOut })    
+  manager.onStart = () => {
+    $("#html-ctn").append(Sqrl.Render($("#tpl").text(), { planetArr }))
   }
 
   manager.onProgress = (url, itemsLoaded, itemsTotal) => {
@@ -938,9 +960,10 @@ function preload(){
 
   manager.onLoad = () => {
     // l(planetArr)
+    preloaded = true
     l('Loading complete!')
-    $("#skip").fadeIn()
-    $("#loading").fadeOut()
+    $("#start, #skip").show()
+    $("#loading").hide()
     init() // -> Everything begins from here
   }
   
@@ -989,14 +1012,16 @@ function preload(){
   // Ship assets
   loaders.gltf.load('assets/star-destroyer/scene.gltf', gltf => { ship = gltf.scene.children[0] })
   loaders.texture.load('assets/smokeparticle.png', tex => { exhaustTex = tex })
+  loaders.texture.load('assets/flare7.png', tex => { starTex = tex })
 }
 
-function beginJourney(){
-  // introSound.stop()
+function beginJourney(){  
+  clearInterval(initInterval) 
   introSound.fade(1, 0, 1000, introSoundId)
   spaceSound.play()
   $(".start-ctn").fadeOut(() => {
-    $("#html-ctn").css({ height: 0, width: 0, })
+    $("#html-ctn").css({ opacity:.8, width: 0 })
+    params.followCam = true
   })
 }
 
@@ -1007,21 +1032,27 @@ $(function(){
   let animation = $(".animation")
   , cloned = animation.clone(true)
   
-  $("#skip ").hide()
+  $("#start, #skip").hide()
   animation.remove()
 
-  $("#start").on("click", function () {
+  $("#start").on("click", () => {
     $("#start").fadeOut()
     cloned.css({ opacity: 1 })
     $(".starwars").append(cloned)
     introSoundId = introSound.play()
     // preload()
 
-    setTimeout(function(){
+    initInterval = setInterval(() => {
       l("Can skip")
-      // beginJourney()      
+      if (preloaded) beginJourney()
     }, 50000)
   })
 
   $("#skip").on("click", beginJourney)
+
+  $("#replay").on("click", () => {
+    params.shipSpeed = 0.0002
+    fraction = 0
+    $(".last-msg").fadeOut()
+  })
 })    
