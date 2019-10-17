@@ -125,6 +125,9 @@ html, body, #three-ctn, #html-ctn,
 	position: relative;
 	z-index: 3;
 }
+#start, #skip{
+  display: none;
+}
 #skip .symbol{
 	font-size: 1.25rem;
 }
