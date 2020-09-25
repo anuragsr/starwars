@@ -32,7 +32,7 @@ const wc = window.console
   }
 }
 
-let ctn = $("#three-ctn")
+let ctn = $("#ctn-three")
   , w = ctn.width()
   , h = ctn.height()
   , renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
@@ -945,7 +945,7 @@ function resize() {
 
 function preload(){
   manager.onStart = () => {
-    $("#html-ctn").append(Sqrl.Render($("#tpl").text(), { planetArr }))
+    $("#ctn-html").append(Sqrl.Render($("#tpl").text(), { planetArr }))
   }
 
   manager.onProgress = (url, itemsLoaded, itemsTotal) => {
@@ -1020,7 +1020,8 @@ function beginJourney(){
   introSound.fade(1, 0, 1000, introSoundId)
   spaceSound.play()
   $(".start-ctn").fadeOut(() => {
-    $("#html-ctn").css({ opacity:.8, width: 0 })
+    $("#ctn-html").css({ opacity:.8, width: 0 })
+    $("#ctn-about").css({ opacity: 1, zIndex: 2 })
     params.followCam = true
   })
 }
