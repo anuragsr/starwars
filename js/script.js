@@ -391,111 +391,66 @@ function initGUI() {
   gui.add(params, 'message')
 }
 
-function addShip() {  
-  exhaust = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
-  exhaust2 = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
-  exhaust3 = new SPE.Group({ texture: { value: exhaustTex }, maxParticleCount: 500 })
-  
+function createEngineFlame(offsetX) {
+  let group = new SPE.Group({
+    texture: { value: exhaustTex },
+    maxParticleCount: 400,
+    blending: THREE.AdditiveBlending
+  })
+
+  group.addEmitter(
+    new SPE.Emitter({
+      maxAge: {
+        value: 0.5,
+        spread: 0.15
+      },
+      position: {
+        value: new THREE.Vector3(0, 0, 0),
+        spread: new THREE.Vector3(0.1, 0.1, 0)
+      },
+      acceleration: {
+        value: new THREE.Vector3(0, 1.2, 0),
+        spread: new THREE.Vector3(0.15, 0.3, 0.15)
+      },
+      velocity: {
+        value: new THREE.Vector3(0, 3.5, 0),
+        spread: new THREE.Vector3(0.2, 1, 0.2)
+      },
+      color: {
+        value: [
+          new THREE.Color(0x8fc1ff),
+          new THREE.Color(0x2f6fff),
+          new THREE.Color(0x0a1a6b)
+        ]
+      },
+      opacity: {
+        value: [1, 0.5, 0]
+      },
+      size: {
+        value: [3, 1.2, 0.1]
+      },
+      particleCount: 40
+    })
+  )
+
+  group.mesh.position.set(offsetX, 0, 3.7)
+  group.mesh.rotation.x = Math.PI / 2
+  group.material.fog = false
+  shipGroup.add(group.mesh)
+
+  return group
+}
+
+function addShip() {
   // The ship
   ship.scale.multiplyScalar(.0035)
   ship.rotation.z = Math.PI / 2
   shipGroup.add(ship)
 
   // The 3 exhaust flames
-  exhaust.addEmitter(
-    new SPE.Emitter({
-      maxAge: {
-        value: 0.2
-      },
-      position: {
-        value: new THREE.Vector3(0, 0, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      acceleration: {
-        value: new THREE.Vector3(0, .5, 0),
-        spread: new THREE.Vector3(0, .25, 0)
-      },
-      velocity: {
-        value: new THREE.Vector3(0, .25, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      color: {
-        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-      },
-      size: {
-        value: 2
-      },
-      particleCount: 20
-    })
-  )
-  exhaust.mesh.position.z = 4
-  exhaust.mesh.rotation.x = Math.PI / 2
-  exhaust.material.fog = false
-  shipGroup.add(exhaust.mesh)    
-
-  exhaust2.addEmitter(
-    new SPE.Emitter({
-      maxAge: {
-        value: 0.2
-      },
-      position: {
-        value: new THREE.Vector3(0, 0, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      acceleration: {
-        value: new THREE.Vector3(0, .5, 0),
-        spread: new THREE.Vector3(0, .25, 0)
-      },
-      velocity: {
-        value: new THREE.Vector3(0, .25, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      color: {
-        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-      },
-      size: {
-        value: 2
-      },
-      particleCount: 20
-    })
-  )
-  exhaust2.mesh.position.z = 4
-  exhaust2.mesh.position.x = .75
-  exhaust2.mesh.rotation.x = Math.PI / 2
-  exhaust2.material.fog = false
-  shipGroup.add(exhaust2.mesh)    
-
-  exhaust3.addEmitter(
-    new SPE.Emitter({
-      maxAge: {
-        value: 0.2
-      },
-      position: {
-        value: new THREE.Vector3(0, 0, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      acceleration: {
-        value: new THREE.Vector3(0, .5, 0),
-        spread: new THREE.Vector3(0, .25, 0)
-      },
-      velocity: {
-        value: new THREE.Vector3(0, .25, 0),
-        spread: new THREE.Vector3(0, .5, 0)
-      },
-      color: {
-        value: [new THREE.Color(0x72d5d3), new THREE.Color(0x6ef8fb)]
-      },
-      size: {
-        value: 2
-      },
-      particleCount: 20
-    })
-  )
-  exhaust3.mesh.position.z = 4
-  exhaust3.mesh.position.x = -.75
-  exhaust3.mesh.rotation.x = Math.PI / 2
-  exhaust3.material.fog = false
-  shipGroup.add(exhaust3.mesh)
+  exhaust = createEngineFlame(0)
+  exhaust2 = createEngineFlame(.75)
+  exhaust3 = createEngineFlame(-.75)
 
   setTimeout(() => {
     splineCamera.position.x = -15
