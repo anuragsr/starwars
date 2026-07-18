@@ -970,10 +970,11 @@ function preload(){
   loaders.texture.load('assets/flare7.png', tex => { starTex = tex })
 }
 
-function beginJourney(){  
-  clearInterval(initInterval) 
+function beginJourney(){
+  clearInterval(initInterval)
   introSound.fade(1, 0, 1000, introSoundId)
   spaceSound.play()
+  $("#mute-btn").fadeIn()
   $(".start-ctn").fadeOut(() => {
     $("#ctn-html").css({ opacity:.8, width: 0 })
     $("#ctn-about").css({ opacity: 1, zIndex: 2 })
@@ -1011,4 +1012,12 @@ $(function(){
     fraction = 0
     $(".last-msg").fadeOut()
   })
-})    
+
+  $("#mute-btn").on("click", function () {
+    let muted = Howler._muted
+    Howler.mute(!muted)
+    $(this)
+      .toggleClass("muted", !muted)
+      .attr("title", !muted ? "Unmute" : "Mute")
+  })
+})

@@ -135,9 +135,39 @@ html, body, #ctn-three, #ctn-html,
   position: absolute;
 	font-size: 1.75rem;
 }
-#skip{  
+#skip{
   top: 20px;
   right: 20px;
+}
+#mute-btn{
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #ff6;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 102, .6);
+  cursor: pointer;
+  user-select: none;
+}
+#mute-btn svg{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  fill: #000;
+}
+#mute-btn .icon-mute{
+  display: none;
+}
+#mute-btn.muted .icon-waves{
+  display: none;
+}
+#mute-btn.muted .icon-mute{
+  display: block;
 }
 .sub{
   font-size: 2rem;
